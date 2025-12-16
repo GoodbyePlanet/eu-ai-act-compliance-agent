@@ -1,12 +1,16 @@
 [project]
-name = "agents"
+name = "PD AI Compliance Agent"
 version = "0.1.0"
 description = "Agents designed for in-depth investigation of specified AI tools, resulting in a structured, analytical research report"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
+    "fastapi>=0.118.3",
     "google-adk>=1.18.0",
     "litellm>=1.80.7",
+    "pydantic>=2.12.5",
     "python-dotenv>=1.2.1",
     "python-multipart>=0.0.20",
+    "streamlit>=1.50.0",
+    "uvicorn>=0.38.0",
 ]

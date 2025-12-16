@@ -1,7 +1,9 @@
+from dotenv import load_dotenv
 from google.adk.agents.llm_agent import Agent
 from google.adk.models.lite_llm import LiteLlm
-
-from dotenv import load_dotenv
+from google.adk.runners import Runner
+from google.adk.sessions import InMemorySessionService
+from google.genai import types
 
 load_dotenv()
 
@@ -87,3 +89,33 @@ root_agent = Agent(
     description=agent_description,
     instruction=agent_instruction
 )
+
+APP_NAME = "PD AI Compliance Agent"
+USER_ID = "user_root_agent"
+SESSION_ID = "session_root_agent"
+
+session_service = InMemorySessionService()
+runner = Runner(
+    agent=root_agent,
+    app_name=APP_NAME,
+    session_service=session_service
+)
+
+
+async def execute(request):
+    # Ensure session exists
+    await session_service.create_session(
+        app_name=APP_NAME,
+        user_id=USER_ID,
+        session_id=SESSION_ID
+    )
+    print(f"Session created for user {USER_ID} with session ID {SESSION_ID} and app name {APP_NAME}")
+    print("Request received ", request)
+
+    prompt = f"Assess AI tool - {request['ai_tool']}"
+    message = types.Content(role="user", parts=[types.Part(text=prompt)])
+
+    async for event in runner.run_async(user_id=USER_ID, session_id=SESSION_ID, new_message=message):
+        if event.is_final_response():
+            return {"summary": event.content.parts[0].text}
+    return None
