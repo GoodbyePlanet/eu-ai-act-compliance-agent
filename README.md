@@ -4,18 +4,18 @@ This is a collection of autonomous AI agents specializing in the deep research, 
 The system executes a thorough investigation to ensure the tool's features, data handling, and operational procedures comply with all internal company policies.
 The final deliverable is an Actionable Research Report that definitively states whether the given AI tool is approved for integration into the daily work environment.
 
-Agents will have the following suffixes that will represent development complexity:
-```
-s - simple
-m - medium
-h - high
-```
-
 #### Running on localhost
 Prerequisites:
-- python > 3.9
+- python >= 3.9
 
 ```bash
+# To start ADK UI
 make venv
 make web
+```
+
+```bash
+# To Start Agent with API and Streamlit UI
+make run-api
+make run-ui
 ```

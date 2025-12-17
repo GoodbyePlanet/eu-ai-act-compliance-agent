@@ -1,4 +1,4 @@
-.PHONY: all venv activate web clean help
+.PHONY: all venv activate web run-api run-ui clean help
 
 VENV_DIR = .venv
 PYTHON = python3
@@ -30,6 +30,16 @@ activate: venv
 	@echo "--- Activating virtual environment ---"
 	@echo "Run the following command manually in your terminal:"
 	@echo "source $(VENV_DIR)/bin/activate"
+
+## run-api: Activates the environment and starts the FastAPI server via uvicorn on port 8000.
+run-api: venv
+	@echo "--- Starting API on port 8000 ---"
+	. $(VENV_DIR)/bin/activate; uvicorn pd_ai_tool_assessment_agent.__main__:app --port 8000
+
+## run-ui: Activates the environment and starts the Streamlit UI.
+run-ui: venv
+	@echo "--- Starting Streamlit UI ---"
+	. $(VENV_DIR)/bin/activate; streamlit run ui.py
 
 ## clean: Removes the virtual environment directory (.venv).
 clean:
