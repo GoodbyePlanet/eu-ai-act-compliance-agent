@@ -110,9 +110,9 @@ async def execute(request):
         session_id=SESSION_ID
     )
     print(f"Session created for user {USER_ID} with session ID {SESSION_ID} and app name {APP_NAME}")
-    print("Request received ", request)
+    print("Request received to assess AI tool - ", request)
 
-    prompt = f"Assess AI tool - {request['ai_tool']}"
+    prompt = f"Assess AI tool - {request}"
     message = types.Content(role="user", parts=[types.Part(text=prompt)])
 
     async for event in runner.run_async(user_id=USER_ID, session_id=SESSION_ID, new_message=message):

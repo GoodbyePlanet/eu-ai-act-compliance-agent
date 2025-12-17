@@ -1,11 +1,16 @@
 from fastapi import FastAPI
+from pydantic import BaseModel
+
+
+class AssessRequest(BaseModel):
+    ai_tool: str
 
 
 def create_app(agent):
     app = FastAPI()
 
     @app.post("/run")
-    async def run(payload: dict):
-        return await agent.execute(payload)
+    async def run(payload: AssessRequest):
+        return await agent.execute(payload.ai_tool)
 
     return app

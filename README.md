@@ -15,7 +15,7 @@ make web
 ```
 
 ```bash
-# To Start Agent with API and Streamlit UI
+# To Start Agent with FastAPI and Streamlit UI
 make run-api
 make run-ui
 ```
