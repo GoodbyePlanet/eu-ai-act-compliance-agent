@@ -1,5 +1,5 @@
 [project]
-name = "PD AI Compliance Agent"
+name = "pd-ai-compliance-agent"
 version = "0.1.0"
 description = "Agents designed for in-depth investigation of specified AI tools, resulting in a structured, analytical research report"
 readme = "README.md"
