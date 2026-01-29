@@ -1,3 +1,5 @@
+import uuid
+
 from dotenv import load_dotenv
 from google.adk.agents.llm_agent import Agent
 from google.adk.models.lite_llm import LiteLlm
@@ -92,7 +94,6 @@ root_agent = Agent(
 
 APP_NAME = "PD AI Compliance Agent"
 USER_ID = "user_root_agent"
-SESSION_ID = "session_root_agent"
 
 session_service = InMemorySessionService()
 runner = Runner(
@@ -103,19 +104,29 @@ runner = Runner(
 
 
 async def execute(request):
-    # Ensure session exists
-    await session_service.create_session(
+    print(f"Request received to assess AI tool {request.ai_tool} - with session ID {request.session_id}")
+
+    current_session = request.session_id if request.session_id else f"session_{uuid.uuid4()}"
+    existing_session = await session_service.get_session(
         app_name=APP_NAME,
         user_id=USER_ID,
-        session_id=SESSION_ID
+        session_id=current_session
     )
-    print(f"Session created for user {USER_ID} with session ID {SESSION_ID} and app name {APP_NAME}")
-    print("Request received to assess AI tool - ", request)
 
-    prompt = f"Assess AI tool - {request}"
+    if existing_session is None:
+        print(f"No session found. Initializing new session with ID: {current_session}")
+        await session_service.create_session(
+            app_name=APP_NAME,
+            user_id=USER_ID,
+            session_id=current_session
+        )
+    else:
+        print(f"Session {current_session} retrieved successfully.")
+
+    prompt = f"Assess AI tool - {request.ai_tool}"
     message = types.Content(role="user", parts=[types.Part(text=prompt)])
 
-    async for event in runner.run_async(user_id=USER_ID, session_id=SESSION_ID, new_message=message):
+    async for event in runner.run_async(user_id=USER_ID, session_id=current_session, new_message=message):
         if event.is_final_response():
             return {"summary": event.content.parts[0].text}
     return None

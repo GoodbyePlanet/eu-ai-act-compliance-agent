@@ -4,6 +4,7 @@ from pydantic import BaseModel
 
 class AssessRequest(BaseModel):
     ai_tool: str
+    session_id: str
 
 
 def create_app(agent):
@@ -11,6 +12,6 @@ def create_app(agent):
 
     @app.post("/run")
     async def run(payload: AssessRequest):
-        return await agent.execute(payload.ai_tool)
+        return await agent.execute(payload)
 
     return app

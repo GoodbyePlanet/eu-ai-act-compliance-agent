@@ -1,3 +1,5 @@
+import uuid
+
 import requests
 import streamlit as st
 
@@ -10,7 +12,10 @@ if st.button("Assess AI tool"):
     if not all([ai_tool]):
         st.warning("Please fill in name of the AI tool to assess.")
     else:
-        payload = {"ai_tool": ai_tool}
+        if "session_id" not in st.session_state:
+            st.session_state.session_id = str(uuid.uuid4())
+
+        payload = {"ai_tool": ai_tool, "session_id": st.session_state.session_id}
         response = requests.post("http://localhost:8000/run", json=payload)
 
         if response.ok:
