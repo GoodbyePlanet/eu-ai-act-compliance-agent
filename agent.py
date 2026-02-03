@@ -85,14 +85,15 @@ agent_instruction = """
     * **Supporting Research Sources:** (List all other blog posts, news articles, or secondary research links here.)
 """
 
+APP_NAME = "assessment_agent"
+
 root_agent = Agent(
     model=LiteLlm(model="anthropic/claude-sonnet-4-5-20250929"),
-    name='root_agent',
+    name=APP_NAME,
     description=agent_description,
     instruction=agent_instruction
 )
 
-APP_NAME = "PD AI Compliance Agent"
 USER_ID = "user_root_agent"
 
 session_service = InMemorySessionService()

@@ -34,7 +34,7 @@ activate: venv
 ## run-api: Activates the environment and starts the FastAPI server via uvicorn on port 8000.
 run-api: venv
 	@echo "--- Starting API on port 8000 ---"
-	. $(VENV_DIR)/bin/activate; uvicorn pd_ai_tool_assessment_agent.__main__:app --port 8000
+	. $(VENV_DIR)/bin/activate; uvicorn main:app --port 8000 --reload
 
 ## run-ui: Activates the environment and starts the Streamlit UI.
 run-ui: venv
