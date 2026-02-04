@@ -18,7 +18,7 @@ if st.button("Submit"):
     if not ai_tool:
         st.warning("Please fill in name of the AI tool to assess.")
     else:
-        with st.spinner("Analyzing..."):
+        with st.spinner("Agent is browsing the web for compliance docs... This may take a few minutes...."):
             payload = {"ai_tool": ai_tool, "session_id": st.session_state.session_id}
             response = requests.post("http://localhost:8000/run", json=payload)
 
