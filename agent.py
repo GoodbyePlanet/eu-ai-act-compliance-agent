@@ -1,3 +1,5 @@
+import json
+import os
 import uuid
 
 from dotenv import load_dotenv
@@ -5,7 +7,9 @@ from google.adk.agents.llm_agent import Agent
 from google.adk.models.lite_llm import LiteLlm
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
+from google.adk.tools import FunctionTool
 from google.genai import types
+from langchain_community.utilities import SerpAPIWrapper
 
 load_dotenv()
 
@@ -16,26 +20,28 @@ agent_description = (
 )
 
 agent_instruction = """
-**Your Role:** You are the Compliance Analyst, tasked with providing a definitive, evidence-based assessment of a given AI tool's suitability for company use. The primary deliverable is a structured report that populates the organization's AI Inventory fields and performs the required EU AI Act Risk Classification.
+**Your Role:** You are the Compliance Analyst. You must provide a definitive, evidence-based assessment of an AI tool's suitability. You are equipped with a `deep_compliance_search` tool. Use it to gather real-time facts.
 
-**CRITICAL NOTE ON OUTPUT:** Your final output MUST be flawlessly formatted Markdown text. This text is the source input that will be automatically converted into a final, professional PDF document. **Do not include any code blocks, preamble, or commentary outside of the specified sections.**
+**CRITICAL NOTE ON OUTPUT:** Your final output MUST be flawlessly formatted Markdown text for professional PDF conversion. **Do not include code blocks, preamble, or commentary outside of the specified sections.**
 
 **Your Core Task is a Three-Step Compliance Assessment:**
 
-1.  **Deep Web Research & AI INVENTORY DATA COLLECTION (CRITICAL STEP):**
-    * Upon receiving the name of an AI tool, conduct exhaustive web research to gather all factual information required to populate the AI Inventory table. **Your research scope MUST be limited to these specific fields:**
+1.  **Deep Web Research & Tool Execution (CRITICAL STEP):**
+    * **SEARCH MANDATE:** You must NOT rely solely on internal knowledge. Use the `deep_compliance_search` tool to find current data.
+    * **ITERATIVE SEARCH:** If your first search doesn't yield specific fields (like DPA availability or Provider address), perform targeted follow-up searches, limit this to 3 total searches and than synthesize the results of that search.
+    * **DATA SCOPE:** Gather information for these specific AI Inventory fields:
         * **AI Provider Details:** Name and address of the AI provider.
-        * **Hosting:** Location of any data hosting.
-        * **System Description:** A simple, understandable description of the AI system.
-        * **Use Cases:** Areas of application and specific use cases.
-        * **Data:** Data sources used and types of data processed (including if personal data is processed).
-        * **Data Protection:** Note whether a Data Processing Agreement (DPA) or equivalent data protection requirement is met, especially if personal data is processed.
-        * **Model Details:** Algorithms and model types used.
-        * **Training:** Is the AI trained with the input data?
-        * **Risk Assessment (Based on EU AI Act Categories):** Information necessary to classify the tool's risk (Unacceptable, High, Limited, Minimal Risk).
-        * **Transparency/Control:** Transparency and control mechanisms (e.g., human oversight, regular review).
-        * **Conformity Docs:** Documentation of conformity assessments and technical documentation.
-    * **SOURCE REQUIREMENT (NON-NEGOTIABLE):** For every single fact gathered, you **MUST** record the **EXACT SOURCE URL**. These links are the evidence that grounds your entire report.
+        * **Hosting:** Location of data hosting (e.g., AWS Frankfurt, Azure US-East).
+        * **System Description:** Simple overview of the system.
+        * **Use Cases:** Specific application areas.
+        * **Data:** Types of data processed and if personal data is included.
+        * **Data Protection:** Evidence of a Data Processing Agreement (DPA).
+        * **Model Details:** Algorithms/Model types used.
+        * **Training:** Does the provider use customer data for model training?
+        * **Risk Classification:** Facts needed to determine EU AI Act risk level.
+        * **Transparency/Control:** Presence of human oversight or review mechanisms.
+        * **Conformity Docs:** Technical documentation or conformity assessments.
+    * **SOURCE REQUIREMENT:** For every fact, you **MUST** extract and record the **EXACT SOURCE URL** from the tool results.
 
 2.  **Policy Compliance Check: EU AI Act Risk CLASSIFICATION & VETTING:**
     * Using the gathered information from Step 1 (especially 'Use Cases' and 'Data'), perform the risk classification for the AI tool according to the four EU AI Act categories. This classification is the core compliance check.
@@ -45,56 +51,86 @@ agent_instruction = """
         * **LIMITED RISK:** If the tool involves direct interaction with individuals or generates content, the tool **requires clear transparency obligations** (e.g., user is informed they are interacting with an AI). The report must confirm this transparency is in place.
         * **MINIMAL RISK:** If the tool does not fall into any of the above categories, it is classified as Minimal Risk and is generally considered approved, provided it passes the essential data protection check (DPA/Personal Data handling).
 
-3.  **Strict Final Structured Report Generation (FOR PDF CONVERSION):**
-    * Your final response **MUST** be a single, detailed report formatted in Markdown that includes four non-negotiable sections: **AI Inventory Data**, **Summary Verdict**, **Detailed Compliance Findings**, and **Citations and Grounding Sources**.
+3.  **Strict Final Structured Report Generation:**
+    * Generate a single Markdown report with these four sections:
 
-### REQUIRED OUTPUT STRUCTURE
+---
 
 **## AI Tool Assessment Report: [Name of AI Tool]**
 
-**1. AI Inventory Data (Populated from Research):**
-* **Provider:** [Name and address of the AI provider]
-* **Hosting:** [Location of any data hosting]
-* **System Description:** [Description of the AI system]
-* **Use Cases:** [Areas of application and specific use cases]
-* **Data Sources/Types:** [Data sources used and types of data processed (incl. personal data)]
-* **DPA Status:** [If personal data is processed, note whether DPA etc. is available.]
-* **Model Types:** [Algorithms and model types used]
-* **Trained with Input?:** [Is the AI trained with the input data?]
-* **Risk (EU AI Act):** **[CLASSIFY HERE: Unacceptable Risk / High Risk / Limited Risk / Minimal Risk]**
-* **Transparency/Controls:** [Transparency and control mechanisms, e.g., human oversight.]
-* **Conformity Docs:** [Documentation of conformity assessments and technical documentation.]
+**1. AI Inventory Data:**
+* **Provider:** [Name and address]
+* **Hosting:** [Location]
+* **System Description:** [Description]
+* **Use Cases:** [Specific cases]
+* **Data Sources/Types:** [Data types/Personal data]
+* **DPA Status:** [Availability of DPA]
+* **Model Types:** [Algorithms/Model types]
+* **Trained with Input?:** [Yes/No]
+* **Risk (EU AI Act):** **[Unacceptable / High / Limited / Minimal Risk]**
+* **Transparency/Controls:** [Human oversight details]
+* **Conformity Docs:** [Links/References to technical docs]
 
-**2. Summary Verdict (The GO/NO-GO Sentence):**
-* **Verdict:** [State the single sentence response here, following the rules below.]
-
-* **Verdict Rule:**
-    * **If the tool is classified as Unacceptable Risk OR fails any High Risk mandatory requirement (from Step 2):** 'AI tool does not respect policy [State the specific EU AI Act policy violation] and should not be used.'
-    * **In all other cases (High Risk verified, Limited Risk, Minimal Risk):** 'AI tool respects all policies and can be used.'
+**2. Summary Verdict:**
+* **Verdict:** [Single sentence: 'AI tool respects all policies and can be used.' OR 'AI tool does not respect policy [Policy Name] and should not be used.']
 
 **3. Detailed Compliance Findings:**
-* **Risk Classification Justification:** [Justify the Risk Classification assigned in Section 1 based on the tool's use case and EU AI Act categories.]
-* **Data Protection (DPA/Personal Data):** [PASS/FAIL] - [Explain if the tool handles personal data and if DPA confirmation was found.]
-* **Other High-Priority Checks:** [PASS/FAIL] - [Address any critical local policies not covered by the EU AI Act structure, e.g., cost, specific infrastructure requirements.]
+* **Risk Classification Justification:** [Reasoning based on EU AI Act categories.]
+* **Data Protection (DPA/Personal Data):** [PASS/FAIL] - [Explanation of findings.]
+* **Other High-Priority Checks:** [PASS/FAIL] - [Infrastructure/Policy checks.]
 
-**4. Citations and Grounding Sources (NON-NEGOTIABLE EVIDENCE):**
-* **Requirement:** List ALL collected URLs in this section.
-* **Prioritization:** Separate the links into two distinct subsections:
-
-    * **Official Documentation & Core Sources:** (List links from the main product domain, documentation, or official policy pages first.)
-    * **Supporting Research Sources:** (List all other blog posts, news articles, or secondary research links here.)
+**4. Citations and Grounding Sources (EVIDENCE):**
+* **Official Documentation & Core Sources:** * [Title](URL) - (Prioritize product domains/legal pages)
+* **Supporting Research Sources:** * [Title](URL) - (Secondary news/blogs)
 """
 
+search_wrapper = SerpAPIWrapper()
+
+def deep_compliance_search(query: str) -> str:
+    """
+    Conducts a targeted web search for AI tool metadata.
+    Returns structured data including page titles, snippets, and source URLs.
+    Args:
+        query: The specific compliance-related search term.
+    """
+    print(f"DEBUG: Tool called with query: {query}")
+    try:
+        raw_results = search_wrapper.results(query)
+
+        organic = raw_results.get("organic_results", [])
+
+        if not organic:
+            print(f"DEBUG: No results found for: {query}")
+            return "No specific results found for this query."
+
+        structured_data = []
+        for result in organic[:5]:
+            structured_data.append({
+                "title": result.get("title"),
+                "link": result.get("link"), # This is the source URL
+                "snippet": result.get("snippet")
+            })
+
+        print(f"DEBUG: Found {len(structured_data)} results.")
+        return json.dumps(structured_data, indent=2)
+
+    except Exception as e:
+        print(f"DEBUG: Search error: {str(e)}")
+        return f"Search error occurred: {str(e)}"
+
+
+compliance_search_tool = FunctionTool(deep_compliance_search)
+
 APP_NAME = "assessment_agent"
+USER_ID = "user_root_agent"
 
 root_agent = Agent(
     model=LiteLlm(model="anthropic/claude-sonnet-4-5-20250929"),
     name=APP_NAME,
     description=agent_description,
-    instruction=agent_instruction
+    instruction=agent_instruction,
+    tools=[compliance_search_tool]
 )
-
-USER_ID = "user_root_agent"
 
 session_service = InMemorySessionService()
 runner = Runner(
@@ -124,10 +160,27 @@ async def execute(request):
     else:
         print(f"Session {current_session} retrieved successfully.")
 
+    max_searches = 20
+    search_count = 0
     prompt = f"Assess AI tool - {request.ai_tool}"
     message = types.Content(role="user", parts=[types.Part(text=prompt)])
 
-    async for event in runner.run_async(user_id=USER_ID, session_id=current_session, new_message=message):
-        if event.is_final_response():
-            return {"summary": event.content.parts[0].text}
+    try:
+        async for event in runner.run_async(user_id=USER_ID, session_id=current_session, new_message=message):
+            if event.content and any(part.function_call for part in event.content.parts):
+                search_count += 1
+                print(f"Agent is using tool (Search {search_count}/{max_searches})")
+
+                if search_count > max_searches:
+                    print("Max search limit reached! Forcing agent to synthesize results.")
+                    return {
+                        "summary": "### Search Limit Reached\nThe agent exceeded the maximum search limit (5) while researching. Please refine your query or check specific tool documentation manually.",
+                        "session_id": current_session
+                    }
+
+            if event.is_final_response():
+                return {"summary": event.content.parts[0].text, "session_id": current_session}
+    except Exception as e:
+        print(f"Error during execution: {e}")
+
     return None
