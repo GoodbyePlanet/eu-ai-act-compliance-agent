@@ -5,14 +5,17 @@ description = "Agents designed for in-depth investigation of specified AI tools,
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
+    "asyncpg>=0.31.0",
     "fastapi>=0.118.3",
     "google-adk>=1.18.0",
     "google-search-results>=2.4.2",
+    "greenlet>=3.2.4",
     "langchain-community>=0.3.31",
     "litellm>=1.80.7",
     "pydantic>=2.12.5",
     "python-dotenv>=1.2.1",
     "python-multipart>=0.0.20",
+    "sqlalchemy>=2.0.46",
     "streamlit>=1.50.0",
     "uvicorn>=0.38.0",
 ]

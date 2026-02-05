@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from google.adk.agents.llm_agent import Agent
 from google.adk.models.lite_llm import LiteLlm
 from google.adk.runners import Runner
-from google.adk.sessions import InMemorySessionService
+from google.adk.sessions import DatabaseSessionService
 from google.adk.tools import FunctionTool
 from google.genai import types
 from langchain_community.utilities import SerpAPIWrapper
@@ -119,6 +119,7 @@ agent_instruction = """
 
 search_wrapper = SerpAPIWrapper()
 
+
 def deep_compliance_search(query: str) -> str:
     """
     Conducts a targeted web search for AI tool metadata.
@@ -142,7 +143,8 @@ def deep_compliance_search(query: str) -> str:
                 "link": result.get("link"),
                 "snippet": result.get("snippet"),
                 "source_type": "Official/Primary" if any(
-                    domain in result.get("link", "").lower() for domain in ["docs.", "legal.", "privacy."]) else "Secondary"
+                    domain in result.get("link", "").lower() for domain in
+                    ["docs.", "legal.", "privacy."]) else "Secondary"
             })
 
         print(f"DEBUG: Found {len(structured_data)} results.")
@@ -166,7 +168,12 @@ root_agent = Agent(
     tools=[compliance_search_tool]
 )
 
-session_service = InMemorySessionService()
+db_url = os.getenv("DATABASE_URL")
+
+if not db_url:
+    raise ValueError("DATABASE_URL environment variable not set.")
+
+session_service = DatabaseSessionService(db_url=db_url)
 runner = Runner(
     agent=root_agent,
     app_name=APP_NAME,
