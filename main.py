@@ -1,4 +1,4 @@
-from common.a2a_server import create_app
+from common.app_server import create_app
 from agent import execute
 
 app = create_app(agent=type("Agent", (), {"execute": execute}))
