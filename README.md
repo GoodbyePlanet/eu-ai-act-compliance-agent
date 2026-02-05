@@ -1,13 +1,14 @@
-#### Automated AI Policy Compliance Agents
+#### Automated EU AI Act Compliance Agent
 
-This is a collection of autonomous AI agents specializing in the deep research, information gathering, and analysis of external AI tools.
-The system executes a thorough investigation to ensure the tool's features, data handling, and operational procedures comply with all internal company policies.
-The final deliverable is an Actionable Research Report that definitively states whether the given AI tool is approved for integration into the daily work environment.
+This project implements autonomous AI agent dedicated to the in-depth research, information gathering, and regulatory
+analysis of external AI tools. The agent conducts a structured evaluation of each tool’s capabilities, data handling
+practices, and operational procedures against the requirements of the EU AI Act.
+The outcome of this process is an Actionable Compliance Report that clearly determines whether the assessed AI tool is
+compliant with EU AI Act obligations and therefore suitable for integration into the daily work environment.
 
 #### Running on localhost
 ```bash
 cp .env.example .env
-# Add your API key to .env
 ```
 
 Prerequisites:
