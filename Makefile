@@ -64,3 +64,8 @@ run-ui: install
 clean:
 	@echo "--- Removing virtual environment directory ($(VENV_DIR)) ---"
 	rm -rf $(VENV_DIR)
+
+## test: Run all tests
+test-all:
+	@echo "--- Running all tests ---"
+	.venv/bin/pytest tests/unit/guardrails/ -v

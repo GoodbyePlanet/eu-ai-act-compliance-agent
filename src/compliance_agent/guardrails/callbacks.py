@@ -124,9 +124,7 @@ def validate_input_guardrail(callback_context) -> Optional[types.Content]:
     return None
 
 
-def tool_input_guardrail(
-    tool, args: Dict[str, Any], tool_context: ToolContext
-) -> Optional[Dict[str, Any]]:
+def tool_input_guardrail(tool, args: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     """
     Guardrail: Validates and sanitizes tool inputs before execution.
 
