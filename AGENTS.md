@@ -163,6 +163,7 @@ def deep_compliance_search(query: str) -> str:
 - Limit function length (< 50 lines when possible)
 - Use early returns for validation
 - Extract complex logic into helper functions
+- Do not add unnecessary comments such as ======= Some comment =======
 
 ### Async/Await Patterns
 - Mark all async functions with `async` keyword

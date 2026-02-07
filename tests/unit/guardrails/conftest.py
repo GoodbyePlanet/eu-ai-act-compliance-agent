@@ -4,8 +4,9 @@ Shared fixtures for guardrails tests.
 This module contains mock objects and fixtures used across guardrail tests.
 """
 
+from unittest.mock import Mock
+
 import pytest
-from unittest.mock import Mock, MagicMock
 
 
 @pytest.fixture
@@ -59,7 +60,7 @@ def mock_session(mock_event):
 
 @pytest.fixture
 def mock_callback_context(mock_session):
-    """Create a mock CallbackContext object with session."""
+    """Create a mock CallbackContext object with a session."""
 
     def _create_context(user_input: str = None, events: list = None):
         context = Mock()
