@@ -29,4 +29,27 @@ if st.button("Submit"):
 
 if st.session_state.tool_report_resp:
     st.divider()
+    if st.button("Looks good, download PDF", key="pdf_download", disabled=False):
+        try:
+            st.session_state.pdf_downloading = True
+            pdf_response = requests.get(
+                "http://localhost:8000/pdf",
+                params={"session_id": st.session_state.session_id}
+            )
+
+            if pdf_response.ok:
+                st.download_button(
+                    label="Download PDF",
+                    data=pdf_response.content,
+                    file_name=f"ai_tool_assessment_{ai_tool}.pdf"
+                )
+            else:
+                st.error("Failed to generate PDF")
+
+        except Exception as e:
+            st.error(f"Download error: {e}")
+
+        finally:
+            st.session_state.pdf_downloading = False
+
     st.markdown(st.session_state.tool_report_resp)
