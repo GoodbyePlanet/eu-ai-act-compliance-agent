@@ -30,6 +30,7 @@ class PDFService:
             List of Paragraph elements.
         """
         try:
+            logger.info("Converting markdown to paragraphs")
             html = markdown.markdown(markdown_text, extensions=["fenced_code"])
             paragraphs = []
             for line in html.split("\n"):
@@ -59,6 +60,7 @@ class PDFService:
         if not report_content:
             raise ValueError("Report content cannot be empty")
 
+        logger.info(f"Generating PDF for tool '{ai_tool_name}'")
         try:
             pdf_buffer = io.BytesIO()
 
@@ -94,6 +96,7 @@ async def get_report_for_session(session_id: str) -> Optional[dict]:
     Returns:
         Dictionary containing 'summary' and 'ai_tool' keys, or None if not found.
     """
+    logger.info(f"Retrieving report for session {session_id}")
     try:
         session = await session_service.get_session(
             app_name=APP_NAME, user_id=USER_ID, session_id=session_id
@@ -105,6 +108,7 @@ async def get_report_for_session(session_id: str) -> Optional[dict]:
         ai_tool_name = _extract_ai_tool_name(session)
         summary = _extract_summary(session)
 
+        logger.info(f"Report retrieved for session {session_id}")
         return {"summary": summary, "ai_tool": ai_tool_name}
     except Exception as e:
         logger.error(f"Error retrieving session {session_id}: {e}")

@@ -50,6 +50,7 @@ def create_app(agent):
         Returns:
             StreamingResponse with PDF content
         """
+        logger.info(f"Generating PDF for session {session_id}")
         report = await get_report_for_session(session_id)
 
         if not report:
