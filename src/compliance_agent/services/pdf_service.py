@@ -1,12 +1,15 @@
 import io
 import logging
+import re
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 
 import markdown
+from reportlab.lib.colors import blue, black
 from reportlab.lib.pagesizes import letter
-from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle, StyleSheet1
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.units import inch
 
 from compliance_agent import session_service
 from compliance_agent.config import APP_NAME, USER_ID
@@ -18,9 +21,75 @@ class PDFService:
     """Service for generating PDF compliance reports."""
 
     @classmethod
-    def _convert_markdown_to_paragraphs(cls, markdown_text: str, styles) -> list:
+    def _create_custom_styles(cls, base_styles):
         """
-        Convert markdown text to ReportLab Paragraph elements.
+        Create custom styles for better PDF formatting.
+
+        Args:
+            base_styles: Default ReportLab style sheet.
+
+        Returns:
+            StyleSheet1 with enhanced styles.
+        """
+        styles = StyleSheet1()
+        for name, style in base_styles.byName.items():
+            styles.add(style)
+
+        # Enhanced heading styles with more spacing
+        styles.add(
+            ParagraphStyle(
+                name="CustomTitle",
+                parent=base_styles["Title"],
+                spaceAfter=18,
+                spaceBefore=12,
+                fontSize=16,
+                textColor=black,
+            )
+        )
+
+        styles.add(
+            ParagraphStyle(
+                name="CustomHeading1",
+                parent=base_styles["Heading1"],
+                spaceAfter=12,
+                spaceBefore=18,
+                fontSize=14,
+                textColor=black,
+            )
+        )
+
+        styles.add(
+            ParagraphStyle(
+                name="CustomHeading2",
+                parent=base_styles["Heading2"],
+                spaceAfter=10,
+                spaceBefore=14,
+                fontSize=12,
+                textColor=black,
+            )
+        )
+
+        styles.add(
+            ParagraphStyle(
+                name="CustomNormal",
+                parent=base_styles["Normal"],
+                fontSize=10,
+                leading=12,
+            )
+        )
+
+        styles.add(
+            ParagraphStyle(
+                name="Link", parent=base_styles["Normal"], textColor=blue, fontSize=10
+            )
+        )
+
+        return styles
+
+    @classmethod
+    def _convert_markdown_to_paragraphs(cls, markdown_text: str, styles) -> List:
+        """
+        Convert markdown text to ReportLab Paragraph elements with enhanced formatting.
 
         Args:
             markdown_text: Markdown formatted text to convert.
@@ -30,16 +99,62 @@ class PDFService:
             List of Paragraph elements.
         """
         try:
-            logger.info("Converting markdown to paragraphs")
-            html = markdown.markdown(markdown_text, extensions=["fenced_code"])
+            # Use markdown extensions for better parsing
+            md = markdown.Markdown(
+                extensions=[
+                    "fenced_code",
+                    "extra",
+                    "nl2br",
+                    "sane_lists",
+                    "smarty",
+                ]
+            )
+            html = md.convert(markdown_text)
+
             paragraphs = []
-            for line in html.split("\n"):
-                if line.strip():
-                    paragraphs.append(Paragraph(line, styles["Normal"]))
+
+            # Improve link and formatting handling
+            def replace_links(match):
+                url = match.group(1)
+                text = match.group(2)
+                # Reportlab link format
+                return f'<link href="{url}" color="blue" fontName="Helvetica" fontSize="10">{text}</link>'
+
+            html = re.sub(r"\[([^\]]+)\]\(([^\)]+)\)", replace_links, html)
+
+            lines = html.split("\n")
+
+            for line in lines:
+                line = line.strip()
+
+                # Heading styles with more structure
+                if line.startswith("<h1"):
+                    line = line.replace("<h1>", "").replace("</h1>", "")
+                    paragraphs.append(Paragraph(line, styles["CustomHeading1"]))
+                    paragraphs.append(Spacer(1, 6))
+
+                elif line.startswith("<h2"):
+                    line = line.replace("<h2>", "").replace("</h2>", "")
+                    paragraphs.append(Paragraph(line, styles["CustomHeading2"]))
+                    paragraphs.append(Spacer(1, 6))
+
+                # Link and text handling
+                elif line:
+                    # Check if it's a list or code block
+                    if line.startswith(("<ul", "<ol", "<pre", "<code")):
+                        # Keep original formatting for these
+                        paragraphs.append(Paragraph(line, styles["CustomNormal"]))
+                    else:
+                        paragraphs.append(Paragraph(line, styles["CustomNormal"]))
+
+                # Add small spacer between paragraphs
+                paragraphs.append(Spacer(1, 3))
+
             return paragraphs
+
         except Exception as e:
             logger.error(f"Error converting markdown to paragraphs: {e}")
-            return [Paragraph(markdown_text, styles["Normal"])]
+            return [Paragraph(markdown_text, styles["CustomNormal"])]
 
     @classmethod
     def generate_pdf(cls, report_content: str, ai_tool_name: str) -> bytes:
@@ -64,16 +179,29 @@ class PDFService:
         try:
             pdf_buffer = io.BytesIO()
 
-            doc = SimpleDocTemplate(pdf_buffer, pagesize=letter)
-            styles = getSampleStyleSheet()
+            # A4 size with wider margins for better readability
+            doc = SimpleDocTemplate(
+                pdf_buffer,
+                pagesize=letter,
+                rightMargin=inch,
+                leftMargin=inch,
+                topMargin=0.5 * inch,
+                bottomMargin=0.5 * inch,
+            )
+
+            # Get styles and enhance them
+            base_styles = getSampleStyleSheet()
+            styles = cls._create_custom_styles(base_styles)
 
             story = [
-                Paragraph("EU AI Act Compliance Assessment", styles["Title"]),
-                Paragraph(f"Tool: {ai_tool_name}", styles["Heading2"]),
-                Paragraph(
-                    f"Date: {datetime.now().strftime('%Y-%m-%d')}", styles["Normal"]
-                ),
+                Paragraph("EU AI Act Compliance Assessment", styles["CustomTitle"]),
                 Spacer(1, 12),
+                Paragraph(f"Tool: {ai_tool_name}", styles["CustomHeading2"]),
+                Paragraph(
+                    f"Date: {datetime.now().strftime('%Y-%m-%d')}",
+                    styles["CustomNormal"],
+                ),
+                Spacer(1, 18),
             ]
 
             story.extend(cls._convert_markdown_to_paragraphs(report_content, styles))
