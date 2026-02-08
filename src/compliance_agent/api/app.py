@@ -1,10 +1,13 @@
 import io
+import logging
 
 from fastapi import FastAPI, HTTPException
 from starlette.responses import StreamingResponse
 
 from compliance_agent.api.models import AssessRequest
 from compliance_agent.services import get_report_for_session, PDFService
+
+logger = logging.getLogger(__name__)
 
 
 def create_app(agent):
@@ -47,26 +50,37 @@ def create_app(agent):
         Returns:
             StreamingResponse with PDF content
         """
-        report = get_report_for_session(session_id)
+        report = await get_report_for_session(session_id)
 
-        # Error handling if no report found
         if not report:
             raise HTTPException(
-                status_code=404,
-                detail="No report found for the given session"
+                status_code=404, detail="No report found for the given session"
             )
 
-        pdf_content = PDFService.generate_pdf(
-            report_content=report['summary'],
-            ai_tool_name=report['ai_tool']
-        )
+        if not report.get("summary"):
+            raise HTTPException(status_code=400, detail="Report has no summary content")
+
+        try:
+            pdf_content = PDFService.generate_pdf(
+                report_content=report["summary"], ai_tool_name=report["ai_tool"]
+            )
+        except ValueError as e:
+            logger.error(f"Invalid report content for session {session_id}: {e}")
+            raise HTTPException(status_code=400, detail=str(e))
+        except RuntimeError as e:
+            logger.error(f"PDF generation failed for session {session_id}: {e}")
+            raise HTTPException(status_code=500, detail="Failed to generate PDF")
+
+        safe_tool_name = "".join(
+            c if c.isalnum() or c in (" ", "-", "_") else "_" for c in report["ai_tool"]
+        ).strip()
 
         return StreamingResponse(
             io.BytesIO(pdf_content),
-            media_type='application/pdf',
+            media_type="application/pdf",
             headers={
-                'Content-Disposition': f'attachment; filename="ai_tool_assessment.pdf"'
-            }
+                "Content-Disposition": f'attachment; filename="ai_tool_assessment_{safe_tool_name}.pdf"'
+            },
         )
 
     @app.get("/health")
