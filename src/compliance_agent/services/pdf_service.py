@@ -8,8 +8,8 @@ import markdown
 from reportlab.lib.colors import blue, black
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle, StyleSheet1
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.units import inch
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 
 from compliance_agent import session_service
 from compliance_agent.config import APP_NAME, USER_ID
@@ -89,17 +89,16 @@ class PDFService:
     @classmethod
     def _convert_markdown_to_paragraphs(cls, markdown_text: str, styles) -> List:
         """
-        Convert markdown text to ReportLab Paragraph elements with enhanced formatting.
-
-        Args:
-            markdown_text: Markdown formatted text to convert.
-            styles: ReportLab style sheet.
-
-        Returns:
-            List of Paragraph elements.
+        Convert Markdown text to ReportLab Paragraph elements for enhanced formatting.
         """
         try:
-            # Use markdown extensions for better parsing
+            def replace_links(match):
+                text = match.group(1)  # Group 1 is the visible text
+                url = match.group(2)  # Group 2 is the actual URL
+                return f'<a href="{url}" color="blue">{text}</a>'
+
+            markdown_text = re.sub(r"\[([^\]]+)\]\(([^\)]+)\)", replace_links, markdown_text)
+
             md = markdown.Markdown(
                 extensions=[
                     "fenced_code",
@@ -110,24 +109,12 @@ class PDFService:
                 ]
             )
             html = md.convert(markdown_text)
-
             paragraphs = []
-
-            # Improve link and formatting handling
-            def replace_links(match):
-                url = match.group(1)
-                text = match.group(2)
-                # Reportlab link format
-                return f'<link href="{url}" color="blue" fontName="Helvetica" fontSize="10">{text}</link>'
-
-            html = re.sub(r"\[([^\]]+)\]\(([^\)]+)\)", replace_links, html)
-
             lines = html.split("\n")
 
             for line in lines:
                 line = line.strip()
 
-                # Heading styles with more structure
                 if line.startswith("<h1"):
                     line = line.replace("<h1>", "").replace("</h1>", "")
                     paragraphs.append(Paragraph(line, styles["CustomHeading1"]))
@@ -138,20 +125,15 @@ class PDFService:
                     paragraphs.append(Paragraph(line, styles["CustomHeading2"]))
                     paragraphs.append(Spacer(1, 6))
 
-                # Link and text handling
                 elif line:
-                    # Check if it's a list or code block
                     if line.startswith(("<ul", "<ol", "<pre", "<code")):
-                        # Keep original formatting for these
                         paragraphs.append(Paragraph(line, styles["CustomNormal"]))
                     else:
                         paragraphs.append(Paragraph(line, styles["CustomNormal"]))
 
-                # Add small spacer between paragraphs
                 paragraphs.append(Spacer(1, 3))
 
             return paragraphs
-
         except Exception as e:
             logger.error(f"Error converting markdown to paragraphs: {e}")
             return [Paragraph(markdown_text, styles["CustomNormal"])]
@@ -179,7 +161,6 @@ class PDFService:
         try:
             pdf_buffer = io.BytesIO()
 
-            # A4 size with wider margins for better readability
             doc = SimpleDocTemplate(
                 pdf_buffer,
                 pagesize=letter,
@@ -189,7 +170,6 @@ class PDFService:
                 bottomMargin=0.5 * inch,
             )
 
-            # Get styles and enhance them
             base_styles = getSampleStyleSheet()
             styles = cls._create_custom_styles(base_styles)
 
