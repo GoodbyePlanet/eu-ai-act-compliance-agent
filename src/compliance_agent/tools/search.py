@@ -8,13 +8,29 @@ compliance information about AI tools.
 import json
 
 from dotenv import load_dotenv
-from google.adk.tools import FunctionTool
-from langchain_community.utilities import SerpAPIWrapper
+from google.adk.tools.function_tool import FunctionTool
+
+from compliance_agent.tools.search_providers import (
+    SearchProviderError,
+    create_search_provider,
+)
+
 
 load_dotenv()
+_search_provider = None
 
-# Initialize the search wrapper
-search_wrapper = SerpAPIWrapper()
+
+def _get_search_provider():
+    """
+    Lazily initialize and return the search provider.
+
+    Uses module-level caching to avoid reinitializing on every search.
+    """
+    global _search_provider
+    if _search_provider is None:
+        _search_provider = create_search_provider()
+        print(f"Initialized search provider: {_search_provider.name}")
+    return _search_provider
 
 
 def deep_compliance_search(query: str) -> str:
@@ -32,38 +48,27 @@ def deep_compliance_search(query: str) -> str:
         JSON string containing search results with titles, links, snippets,
         and source type classification.
     """
-    print(f"DEBUG: Tool called with query: {query}")
-    try:
-        raw_results = search_wrapper.results(query)
-        organic = raw_results.get("organic_results", [])
+    print(f"Tool called with query: {query}")
 
-        if not organic:
-            print(f"DEBUG: No results found for: {query}")
+    try:
+        provider = _get_search_provider()
+        results = provider.search(query, max_results=5)
+
+        if not results:
+            print(f"No results found for: {query}")
             return "No specific results found for this query."
 
-        structured_data = []
-        for result in organic[:5]:
-            structured_data.append(
-                {
-                    "title": result.get("title"),
-                    "link": result.get("link"),
-                    "snippet": result.get("snippet"),
-                    "source_type": "Official/Primary"
-                    if any(
-                        domain in result.get("link", "").lower()
-                        for domain in ["docs.", "legal.", "privacy."]
-                    )
-                    else "Secondary",
-                }
-            )
+        structured_data = [result.to_dict() for result in results]
 
-        print(f"DEBUG: Found {len(structured_data)} results.")
+        print(f"Found {len(structured_data)} results.")
         return json.dumps(structured_data, indent=2)
 
+    except SearchProviderError as e:
+        print(f"Search provider error: {str(e)}")
+        return json.dumps({"error": f"Search failed: {str(e)}"})
     except Exception as e:
-        print(f"DEBUG: Search error: {str(e)}")
+        print(f"Unexpected search error: {str(e)}")
         return json.dumps({"error": f"Search failed: {str(e)}"})
 
 
-# Create the FunctionTool wrapper for the agent
 compliance_search_tool = FunctionTool(deep_compliance_search)
