@@ -5,12 +5,14 @@ This module contains all guardrail callback functions that protect the agent fro
 - Prompt injection attacks
 - Off-topic or harmful searches
 """
-
+import logging
 import re
 from typing import Optional, Dict, Any
 
 from google.adk.tools.tool_context import ToolContext
 from google.genai import types
+
+logger = logging.getLogger(__name__)
 
 # Patterns that might indicate prompt injection or misuse
 BLOCKED_INPUT_PATTERNS = [
@@ -92,11 +94,10 @@ def validate_input_guardrail(callback_context) -> Optional[types.Content]:
                 break
 
     if not user_input:
-        return None  # No input to validate, continue
+        return None
 
-    # Check input length
     if len(user_input) > MAX_INPUT_LENGTH:
-        print(f"GUARDRAIL: Input rejected - too long ({len(user_input)} chars)")
+        logger.warning(f"GUARDRAIL: Input rejected - too long ({len(user_input)} chars)")
         return types.Content(
             role="model",
             parts=[
@@ -106,11 +107,10 @@ def validate_input_guardrail(callback_context) -> Optional[types.Content]:
             ],
         )
 
-    # Check for prompt injection patterns
     user_input_lower = user_input.lower()
     for pattern in BLOCKED_INPUT_PATTERNS:
         if re.search(pattern, user_input_lower):
-            print(f"GUARDRAIL: Input rejected - matched blocked pattern: {pattern}")
+            logger.warning(f"GUARDRAIL: Input rejected - matched blocked pattern: {pattern}")
             return types.Content(
                 role="model",
                 parts=[
@@ -120,7 +120,7 @@ def validate_input_guardrail(callback_context) -> Optional[types.Content]:
                 ],
             )
 
-    print("GUARDRAIL: Input validated successfully")
+    logger.debug("GUARDRAIL: Input validated successfully")
     return None
 
 
@@ -145,18 +145,18 @@ def tool_input_guardrail(
         # Block dangerous/off-topic search terms
         for blocked in BLOCKED_SEARCH_TERMS:
             if blocked in query:
-                print(f"GUARDRAIL: Search blocked - contains term: {blocked}")
+                logger.warning(f"GUARDRAIL: Search blocked - contains term: {blocked}")
                 return {
                     "blocked": True,
                     "reason": f"Search query contains off-topic term '{blocked}'. Please focus on compliance-related searches for the AI tool.",
                 }
 
-        # Log warning if query doesn't seem compliance-related
+        # Log warning if a query doesn't seem compliance-related
         has_compliance_term = any(term in query for term in COMPLIANCE_SEARCH_TERMS)
         if not has_compliance_term:
-            print(f"GUARDRAIL WARNING: Query may not be compliance-related: {query}")
+            logger.warning(f"GUARDRAIL WARNING: Query may not be compliance-related: {query}")
         else:
-            print(f"GUARDRAIL: Search query approved: {query[:50]}...")
+            logger.debug(f"GUARDRAIL: Search query approved: {query[:50]}...")
 
     return None
 
@@ -174,5 +174,5 @@ def output_validation_guardrail(callback_context) -> Optional[types.Content]:
         Content to append/modify output, None otherwise.
     """
     # TODO: Find out do we need output validation at all?
-    print("GUARDRAIL: Output validation completed")
+    logger.debug("GUARDRAIL: Output validation completed")
     return None

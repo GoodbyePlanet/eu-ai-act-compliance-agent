@@ -1,3 +1,4 @@
+import logging
 import os
 import uuid
 
@@ -23,6 +24,7 @@ from compliance_agent.guardrails import (
 from compliance_agent.tools import compliance_search_tool
 
 load_dotenv()
+logger = logging.getLogger(__name__)
 
 root_agent = Agent(
     model=LiteLlm(model="anthropic/claude-sonnet-4-5-20250929"),
@@ -56,7 +58,7 @@ async def execute(request):
         Dictionary with 'summary' (the compliance report) and 'session_id',
         or None if execution fails.
     """
-    print(
+    logger.info(
         f"Request received with message: {request.ai_tool} - with session ID {request.session_id}"
     )
 
@@ -68,12 +70,12 @@ async def execute(request):
     )
 
     if existing_session is None:
-        print(f"No session found. Initializing new session with ID: {current_session}")
+        logger.info(f"No session found. Initializing new session with ID: {current_session}")
         await session_service.create_session(
             app_name=APP_NAME, user_id=USER_ID, session_id=current_session
         )
     else:
-        print(f"Session {current_session} retrieved successfully.")
+        logger.info(f"Session {current_session} retrieved successfully.")
 
     search_count = 0
     prompt = f"Assess AI tool - {request.ai_tool}"
@@ -87,10 +89,10 @@ async def execute(request):
                     part.function_call for part in event.content.parts
             ):
                 search_count += 1
-                print(f"Agent is using tool (Search {search_count}/{MAX_SEARCHES})")
+                logger.info(f"Agent is using tool (Search {search_count}/{MAX_SEARCHES})")
 
                 if search_count > MAX_SEARCHES:
-                    print(
+                    logger.warning(
                         "Max search limit reached! Forcing agent to synthesize results."
                     )
                     return {
@@ -104,6 +106,6 @@ async def execute(request):
                     "session_id": current_session,
                 }
     except Exception as e:
-        print(f"Error during execution: {e}")
+        logger.error(f"Error during execution: {e}")
 
     return None
