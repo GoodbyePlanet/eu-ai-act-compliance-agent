@@ -6,6 +6,7 @@ compliance information about AI tools.
 """
 
 import json
+import logging
 
 from dotenv import load_dotenv
 from google.adk.tools.function_tool import FunctionTool
@@ -15,8 +16,8 @@ from compliance_agent.tools.search_providers import (
     create_search_provider,
 )
 
-
 load_dotenv()
+logger = logging.getLogger(__name__)
 _search_provider = None
 
 
@@ -29,7 +30,7 @@ def _get_search_provider():
     global _search_provider
     if _search_provider is None:
         _search_provider = create_search_provider()
-        print(f"Initialized search provider: {_search_provider.name}")
+        logger.info(f"Initialized search provider: {_search_provider.name}")
     return _search_provider
 
 
@@ -48,26 +49,26 @@ def deep_compliance_search(query: str) -> str:
         JSON string containing search results with titles, links, snippets,
         and source type classification.
     """
-    print(f"Tool called with query: {query}")
+    logger.info(f"Tool called with query: {query}")
 
     try:
         provider = _get_search_provider()
         results = provider.search(query, max_results=5)
 
         if not results:
-            print(f"No results found for: {query}")
+            logger.info(f"No results found for: {query}")
             return "No specific results found for this query."
 
         structured_data = [result.to_dict() for result in results]
 
-        print(f"Found {len(structured_data)} results.")
+        logger.info(f"Found {len(structured_data)} results.")
         return json.dumps(structured_data, indent=2)
 
     except SearchProviderError as e:
-        print(f"Search provider error: {str(e)}")
+        logger.error(f"Search provider error: {str(e)}")
         return json.dumps({"error": f"Search failed: {str(e)}"})
     except Exception as e:
-        print(f"Unexpected search error: {str(e)}")
+        logger.error(f"Unexpected search error: {str(e)}")
         return json.dumps({"error": f"Search failed: {str(e)}"})
 
 

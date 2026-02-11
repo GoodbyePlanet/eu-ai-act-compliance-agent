@@ -5,7 +5,7 @@ This module provides a factory function that automatically selects
 and instantiates the appropriate search provider based on available
 API keys in the environment.
 """
-
+import logging
 import os
 from enum import Enum
 from typing import Optional
@@ -17,6 +17,8 @@ from compliance_agent.tools.search_providers.base import (
 from compliance_agent.tools.search_providers.serpapi import SerpAPIProvider
 from compliance_agent.tools.search_providers.serper import GoogleSerperProvider
 
+logger = logging.getLogger(__name__)
+
 
 class ProviderType(Enum):
     """Enumeration of available search provider types."""
@@ -26,7 +28,7 @@ class ProviderType(Enum):
 
 
 def create_search_provider(
-    provider_type: Optional[ProviderType] = None,
+        provider_type: Optional[ProviderType] = None,
 ) -> SearchProvider:
     """
     Create and return a search provider instance.
@@ -55,7 +57,7 @@ def create_search_provider(
                 "Factory",
                 "SERPER_API_KEY environment variable is not set.",
             )
-        print("Creating GoogleSerper provider (explicitly requested).")
+        logger.info("Creating GoogleSerper provider (explicitly requested).")
         return GoogleSerperProvider(api_key=serper_api_key)
 
     if provider_type == ProviderType.SERPAPI:
@@ -64,15 +66,15 @@ def create_search_provider(
                 "Factory",
                 "SERPAPI_API_KEY environment variable is not set.",
             )
-        print("Creating SerpAPI provider (explicitly requested).")
+        logger.info("Creating SerpAPI provider (explicitly requested).")
         return SerpAPIProvider(api_key=serpapi_api_key)
 
     if serper_api_key:
-        print("Auto-selected GoogleSerper provider (SERPER_API_KEY found).")
+        logger.info("Auto-selected GoogleSerper provider (SERPER_API_KEY found).")
         return GoogleSerperProvider(api_key=serper_api_key)
 
     if serpapi_api_key:
-        print("Auto-selected SerpAPI provider (SERPAPI_API_KEY found).")
+        logger.info("Auto-selected SerpAPI provider (SERPAPI_API_KEY found).")
         return SerpAPIProvider(api_key=serpapi_api_key)
 
     raise SearchProviderError(
