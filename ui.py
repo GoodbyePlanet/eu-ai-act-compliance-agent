@@ -6,6 +6,22 @@ import streamlit as st
 st.set_page_config(page_title="PD AI Tool Assessment Agent")
 st.title("PD AI Tool Assessment Agent")
 
+if not st.user.is_logged_in:
+    st.subheader("Verify if AI tool you want to use in your organisation is compliant with the EU Act")
+    st.info("Please log in to access the compliance verification tool.")
+
+    if st.button("Log in with Google"):
+        st.login()
+
+    st.stop()
+
+st.markdown(f"Welcome! {st.user.name}")
+
+with st.sidebar:
+    if st.button("Log out"):
+        st.logout()
+
+
 if "session_id" not in st.session_state:
     st.session_state.session_id = str(uuid.uuid4())
 
