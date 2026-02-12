@@ -3,8 +3,8 @@ import uuid
 import requests
 import streamlit as st
 
-st.set_page_config(page_title="PD AI Tool Assessment Agent")
-st.title("PD AI Tool Assessment Agent")
+st.set_page_config(page_title="AI Tool Assessment Agent")
+st.title("AI Tool Assessment Agent")
 
 if not st.user.is_logged_in:
     st.subheader("Verify if AI tool you want to use in your organisation is compliant with the EU Act")
