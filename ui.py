@@ -19,9 +19,6 @@ if not st.user.is_logged_in:
         " please authenticate with your Google Workspace account.</p>",
         unsafe_allow_html=True,
     )
-    st.text(
-        ""
-    )
     left_co, cent_co, last_co = st.columns([1, 1, 1])
     with cent_co:
         if st.button("Log in with Google", use_container_width=True):
