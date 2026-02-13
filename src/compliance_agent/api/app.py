@@ -10,7 +10,6 @@ from compliance_agent.api.models import AssessRequest
 from compliance_agent.services import get_report_for_session, PDFService
 
 logger = logging.getLogger(__name__)
-LANDING_PAGE_PATH = os.path.join(os.getcwd(), "landing_page.html")
 
 
 def create_app(agent):
@@ -37,7 +36,8 @@ def create_app(agent):
         Returns:
             Landing page HTML content.
         """
-        with open(LANDING_PAGE_PATH, "r") as f:
+        path = os.path.join(os.getcwd(), "landing_page.html")
+        with open(path, "r") as f:
             return f.read()
 
     @app.post("/run")

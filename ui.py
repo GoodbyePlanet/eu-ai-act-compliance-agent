@@ -1,7 +1,10 @@
+import os
 import uuid
 
 import requests
 import streamlit as st
+
+API_URL = os.getenv("API_URL", "http://localhost:8000")
 
 st.set_page_config(
     page_title="AI Tool Assessment Agent",
@@ -55,10 +58,10 @@ if st.button("Submit"):
         st.warning("Please fill in name of the AI tool to assess.")
     else:
         with st.spinner(
-                "Agent is browsing the web for compliance docs... This may take a few minutes...."
+            "Agent is browsing the web for compliance docs... This may take a few minutes...."
         ):
             payload = {"ai_tool": ai_tool, "session_id": st.session_state.session_id}
-            response = requests.post("http://localhost:8000/run", json=payload)
+            response = requests.post(f"{API_URL}/run", json=payload)
 
             if response.ok:
                 st.session_state.tool_report_resp = response.json().get("summary")
@@ -73,7 +76,7 @@ if st.session_state.tool_report_resp:
     try:
         with st.spinner("Generating PDF..."):
             pdf_response = requests.get(
-                "http://localhost:8000/pdf",
+                f"{API_URL}/pdf",
                 params={"session_id": st.session_state.session_id},
             )
 
