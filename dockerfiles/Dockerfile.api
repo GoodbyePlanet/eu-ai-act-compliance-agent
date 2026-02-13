@@ -1,0 +1,47 @@
+# =============================================================================
+# Dockerfile.api - FastAPI Backend Service
+# =============================================================================
+# Multi-stage build for the EU AI Act Compliance API
+# Stage 1: Install dependencies with uv
+# Stage 2: Minimal runtime image
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# STAGE 1: Builder - Install dependencies
+# -----------------------------------------------------------------------------
+FROM python:3.11-slim AS builder
+
+# Install uv package manager
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+WORKDIR /app
+
+# Copy dependency files and source code
+COPY pyproject.toml uv.lock README.md ./
+COPY src/ ./src/
+
+# Create virtual environment and install dependencies + project
+# --frozen: use exact versions from uv.lock
+RUN uv sync --frozen
+
+# -----------------------------------------------------------------------------
+# STAGE 2: Runtime - Minimal production image
+# -----------------------------------------------------------------------------
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Copy virtual environment from builder
+COPY --from=builder /app/.venv /app/.venv
+
+# Add virtual environment to PATH
+ENV PATH="/app/.venv/bin:$PATH"
+
+# Copy application source code
+COPY . .
+
+# Expose API port
+EXPOSE 8000
+
+# Run FastAPI with uvicorn
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
