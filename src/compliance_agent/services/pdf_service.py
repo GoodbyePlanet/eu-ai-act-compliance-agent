@@ -12,7 +12,7 @@ from reportlab.lib.units import inch
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 
 from compliance_agent import session_service
-from compliance_agent.config import APP_NAME, USER_ID
+from compliance_agent.config import APP_NAME
 
 logger = logging.getLogger(__name__)
 
@@ -194,12 +194,13 @@ class PDFService:
             raise RuntimeError(f"Failed to generate PDF: {e}") from e
 
 
-async def get_report_for_session(session_id: str) -> Optional[dict]:
+async def get_report_for_session(session_id: str, user_email: str = None) -> Optional[dict]:
     """
     Retrieve the compliance report for a given session.
 
     Args:
         session_id: Unique session identifier.
+        user_email: Optional user email address.
 
     Returns:
         Dictionary containing 'summary' and 'ai_tool' keys, or None if not found.
@@ -207,7 +208,7 @@ async def get_report_for_session(session_id: str) -> Optional[dict]:
     logger.info(f"Retrieving report for session {session_id}")
     try:
         session = await session_service.get_session(
-            app_name=APP_NAME, user_id=USER_ID, session_id=session_id
+            app_name=APP_NAME, user_id=user_email, session_id=session_id
         )
         if not session:
             logger.warning(f"No session found for session_id: {session_id}")

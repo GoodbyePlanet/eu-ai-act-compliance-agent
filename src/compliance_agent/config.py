@@ -119,6 +119,4 @@ AGENT_INSTRUCTION = """
 
 APP_NAME = "assessment_agent"
 
-USER_ID = "user_root_agent"
-
 MAX_SEARCHES = 20

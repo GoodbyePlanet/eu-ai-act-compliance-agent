@@ -148,7 +148,7 @@ Use `async for` for streaming, handle async exceptions properly.
 
 ```python
 async def execute(request):
-    async for event in runner.run_async(user_id=USER_ID, session_id=session_id):
+    async for event in runner.run_async(user_id=user_email, session_id=session_id):
         if event.is_final_response():
             return {"summary": event.content.parts[0].text}
 ```

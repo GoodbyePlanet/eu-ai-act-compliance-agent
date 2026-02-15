@@ -13,7 +13,6 @@ from compliance_agent.config import (
     AGENT_DESCRIPTION,
     AGENT_INSTRUCTION,
     APP_NAME,
-    USER_ID,
     MAX_SEARCHES,
 )
 from compliance_agent.guardrails import (
@@ -62,17 +61,22 @@ async def execute(request):
         f"Request received with message: {request.ai_tool} - with session ID {request.session_id}"
     )
 
+    if request.user_email:
+        user_email = request.user_email
+    else:
+        user_email = f"Guest_{uuid.uuid4()}" # TODO: Later on we want to allow guest users to use the app
+
     current_session = (
         request.session_id if request.session_id else f"session_{uuid.uuid4()}"
     )
     existing_session = await session_service.get_session(
-        app_name=APP_NAME, user_id=USER_ID, session_id=current_session
+        app_name=APP_NAME, user_id=user_email, session_id=current_session
     )
 
     if existing_session is None:
         logger.info(f"No session found. Initializing new session with ID: {current_session}")
         await session_service.create_session(
-            app_name=APP_NAME, user_id=USER_ID, session_id=current_session
+            app_name=APP_NAME, user_id=user_email, session_id=current_session
         )
     else:
         logger.info(f"Session {current_session} retrieved successfully.")
@@ -83,7 +87,7 @@ async def execute(request):
 
     try:
         async for event in runner.run_async(
-                user_id=USER_ID, session_id=current_session, new_message=message
+                user_id=user_email, session_id=current_session, new_message=message
         ):
             if event.content and any(
                     part.function_call for part in event.content.parts

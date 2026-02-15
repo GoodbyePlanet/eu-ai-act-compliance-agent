@@ -58,9 +58,9 @@ if st.button("Submit"):
         st.warning("Please fill in name of the AI tool to assess.")
     else:
         with st.spinner(
-            "Agent is browsing the web for compliance docs... This may take a few minutes...."
+                "Agent is browsing the web for compliance docs... This may take a few minutes...."
         ):
-            payload = {"ai_tool": ai_tool, "session_id": st.session_state.session_id}
+            payload = {"ai_tool": ai_tool, "session_id": st.session_state.session_id, "user_email": st.user.email}
             response = requests.post(f"{API_URL}/run", json=payload)
 
             if response.ok:
@@ -77,7 +77,7 @@ if st.session_state.tool_report_resp:
         with st.spinner("Generating PDF..."):
             pdf_response = requests.get(
                 f"{API_URL}/pdf",
-                params={"session_id": st.session_state.session_id},
+                params={"session_id": st.session_state.session_id, "user_email": st.user.email},
             )
 
             if pdf_response.ok:
