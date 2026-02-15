@@ -54,18 +54,19 @@ def create_app(agent):
         return await agent.execute(payload)
 
     @app.get("/pdf")
-    async def get_pdf(session_id: str):
+    async def get_pdf(session_id: str, user_email: str = None):
         """
         Generate PDF for a given session ID
 
         Args:
             session_id: Unique session identifier
+            user_email: Optional user email address
 
         Returns:
             StreamingResponse with PDF content
         """
         logger.info(f"Generating PDF for session {session_id}")
-        report = await get_report_for_session(session_id)
+        report = await get_report_for_session(session_id, user_email)
 
         if not report:
             raise HTTPException(

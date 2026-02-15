@@ -8,6 +8,7 @@ class AssessRequest(BaseModel):
 
     ai_tool: str
     session_id: Optional[str] = None
+    user_email: Optional[str] = None
 
 
 class AssessResponse(BaseModel):
