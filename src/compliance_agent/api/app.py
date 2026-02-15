@@ -1,7 +1,9 @@
 import io
 import logging
+import os
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import HTMLResponse
 from starlette.responses import StreamingResponse
 
 from compliance_agent.api.models import AssessRequest
@@ -25,6 +27,18 @@ def create_app(agent):
         description="API for assessing AI tools against EU AI Act regulations",
         version="1.0.0",
     )
+
+    @app.get("/", response_class=HTMLResponse)
+    async def read_landing():
+        """
+        Landing page.
+
+        Returns:
+            Landing page HTML content.
+        """
+        path = os.path.join(os.getcwd(), "landing_page.html")
+        with open(path, "r") as f:
+            return f.read()
 
     @app.post("/run")
     async def run(payload: AssessRequest):

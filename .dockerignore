@@ -1,0 +1,46 @@
+# Virtual environments - CRITICAL: prevents local venv from overwriting container venv
+.venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment files (contain secrets)
+.env
+.env.*
+
+# Git
+.git/
+.gitignore
+
+# Docker files (not needed inside container)
+Dockerfile*
+docker-compose*.yml
+dockerfiles/
+
+# Tests and documentation
+tests/
+docs/
+*.md
+!README.md
+
+# OS files
+.DS_Store
+Thumbs.db
