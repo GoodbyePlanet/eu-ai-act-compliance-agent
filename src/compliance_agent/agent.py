@@ -2,8 +2,10 @@ import logging
 import os
 import uuid
 
+import time
 from dotenv import load_dotenv
 from google.adk.agents.llm_agent import Agent
+from google.adk.events import Event, EventActions
 from google.adk.models.lite_llm import LiteLlm
 from google.adk.runners import Runner
 from google.adk.sessions import DatabaseSessionService
@@ -64,7 +66,7 @@ async def execute(request):
     if request.user_email:
         user_email = request.user_email
     else:
-        user_email = f"Guest_{uuid.uuid4()}" # TODO: Later on we want to allow guest users to use the app
+        user_email = f"Guest_{uuid.uuid4()}"  # TODO: Later on we want to allow guest users to use the app
 
     current_session = (
         request.session_id if request.session_id else f"session_{uuid.uuid4()}"
@@ -73,17 +75,42 @@ async def execute(request):
         app_name=APP_NAME, user_id=user_email, session_id=current_session
     )
 
+    is_follow_up = False
+
     if existing_session is None:
         logger.info(f"No session found. Initializing new session with ID: {current_session}")
-        await session_service.create_session(
-            app_name=APP_NAME, user_id=user_email, session_id=current_session
+        session_obj = await session_service.create_session(
+            app_name=APP_NAME,
+            user_id=user_email,
+            state={"ai_tool": request.ai_tool},
+            session_id=current_session
         )
     else:
         logger.info(f"Session {current_session} retrieved successfully.")
+        session_obj = existing_session
 
-    search_count = 0
-    prompt = f"Assess AI tool - {request.ai_tool}"
+        # Check if the tool was already defined in a previous turn
+        if session_obj.state and session_obj.state.get("ai_tool"):
+            is_follow_up = True
+        else:
+            # Fallback just in case the state was lost but session existed
+            update_event = Event(
+                invocation_id=str(uuid.uuid4()),
+                author="system",
+                actions=EventActions(state_delta={"ai_tool": request.ai_tool}),
+                timestamp=time.time()
+            )
+            await session_service.append_event(session=session_obj, event=update_event)
+
+    if is_follow_up:
+        prompt = request.ai_tool
+        logger.info(f"Executing Human-in-the-Loop follow-up: {prompt}")
+    else:
+        prompt = f"Assess AI tool - {request.ai_tool}"
+        logger.info(f"Executing Initial Assessment for: {request.ai_tool}")
+
     message = types.Content(role="user", parts=[types.Part(text=prompt)])
+    search_count = 0
 
     try:
         async for event in runner.run_async(
@@ -99,14 +126,39 @@ async def execute(request):
                     logger.warning(
                         "Max search limit reached! Forcing agent to synthesize results."
                     )
+                    error_summary = "### Search Limit Reached\nThe agent exceeded the maximum search limit while researching. Please refine your query or check specific tool documentation manually."
+                    session_obj = await session_service.get_session(
+                        app_name=APP_NAME, user_id=user_email, session_id=current_session
+                    )
+                    sys_event = Event(
+                        invocation_id=str(uuid.uuid4()),
+                        author="system",
+                        actions=EventActions(state_delta={"summary": error_summary}),
+                        timestamp=time.time()
+                    )
+                    await session_service.append_event(session=session_obj, event=sys_event)
                     return {
                         "summary": "### Search Limit Reached\nThe agent exceeded the maximum search limit while researching. Please refine your query or check specific tool documentation manually.",
                         "session_id": current_session,
                     }
 
             if event.is_final_response():
+                final_summary = event.content.parts[0].text
+
+                session_obj = await session_service.get_session(
+                    app_name=APP_NAME, user_id=user_email, session_id=current_session
+                )
+
+                sys_event = Event(
+                    invocation_id=str(uuid.uuid4()),
+                    author="system",
+                    actions=EventActions(state_delta={"summary": final_summary}),
+                    timestamp=time.time()
+                )
+                await session_service.append_event(session=session_obj, event=sys_event)
+
                 return {
-                    "summary": event.content.parts[0].text,
+                    "summary": final_summary,
                     "session_id": current_session,
                 }
     except Exception as e:
