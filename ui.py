@@ -1,5 +1,6 @@
 import os
 import uuid
+from datetime import datetime
 
 import requests
 import streamlit as st
@@ -97,11 +98,23 @@ if "pdf_data" not in st.session_state:
 
 # --- Sidebar UI (Session History) ---
 with st.sidebar:
-    st.write(f"Logged in as: **{st.user.email}**")
-    if st.button("Log out"):
-        st.logout()
-
-    st.divider()
+    st.markdown(
+        """
+        <style>
+            [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
+                height: 100vh;
+            }
+            /* Target the very last container inside the sidebar and push it down */
+            [data-testid="stSidebar"] [data-testid="stVerticalBlock"] > div:last-child {
+                margin-top: auto;
+            }
+            [data-testid="stSidebarUserContent"] {
+                padding-bottom: 1rem;
+            }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
 
     if st.button("➕ New Assessment", use_container_width=True):
         st.session_state.session_id = str(uuid.uuid4())
@@ -118,11 +131,25 @@ with st.sidebar:
     else:
         for session in history:
             tool = session.get("ai_tool", "Unknown Tool")
+            display_tool = tool if len(tool) <= 10 else tool[:10] + "..."
             time_str = session.get("created_at", "")
+            if time_str:
+                try:
+                    parsed_time = datetime.strptime(time_str, "%b %d, %I:%M %p")
+                    formatted_time = parsed_time.strftime("%b %d, %H:%M")
+                except ValueError:
+                    pass
 
-            if st.button(f"📄 {tool} \n\n {time_str}", key=session["session_id"], use_container_width=True):
+            if st.button(f"{display_tool} - {formatted_time}", key=session["session_id"], use_container_width=True):
                 load_historical_session(session["session_id"], st.user.email)
-                st.rerun()  # Refresh the UI with the loaded session data
+                st.rerun()
+
+    with st.container():
+        st.divider()
+        st.write(f"Logged in as: **{st.user.email}**")
+        if st.button("Log out", use_container_width=True):
+            st.logout()
+
 
 # --- Main Page UI ---
 st.markdown(f"Welcome, **{st.user.name}**")
