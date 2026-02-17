@@ -3,7 +3,7 @@ from datetime import datetime
 
 import streamlit as st
 
-from frontend import load_historical_session, fetch_session_history
+from frontend import fetch_session_by_id_and_email, fetch_session_history
 
 
 def render_sidebar():
@@ -63,7 +63,7 @@ def render_sidebar():
                         pass
 
                 if st.button(f"{display_tool} - {formatted_time}", key=session["session_id"], use_container_width=True):
-                    load_historical_session(session["session_id"], st.user.email)
+                    fetch_session_by_id_and_email(session["session_id"], st.user.email)
                     st.rerun()
 
         with st.container():

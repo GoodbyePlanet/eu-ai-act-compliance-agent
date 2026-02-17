@@ -16,7 +16,7 @@ class SessionInfoDict(TypedDict):
 
 
 class SessionListItemDict(TypedDict):
-    """Type for individual session in the sessions list."""
+    """Type for an individual session in the session list."""
 
     session_id: str
     ai_tool: str
@@ -68,9 +68,9 @@ def fetch_session_history(email: str) -> List[SessionListItemDict]:
     return []
 
 
-def load_historical_session(session_id: str, email: str) -> None:
+def fetch_session_by_id_and_email(session_id: str, email: str) -> None:
     """
-    Load a historical session and update Streamlit session state.
+    Load a historical session and update the Streamlit session state.
 
     Args:
         session_id: Unique session identifier.

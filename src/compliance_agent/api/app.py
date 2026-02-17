@@ -60,7 +60,7 @@ def create_app(agent: AgentProtocol) -> FastAPI:
         Run a compliance assessment for the specified AI tool.
 
         Args:
-            payload: Assessment request containing AI tool name and optional session ID.
+            payload: Assessment request containing AI tool name, session ID and user email.
 
         Returns:
             Assessment results including compliance summary and session ID.
