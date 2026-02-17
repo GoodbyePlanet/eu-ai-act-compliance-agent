@@ -8,13 +8,13 @@ compliant with EU AI Act obligations and therefore suitable for integration into
 
 #### Running on localhost
 ```bash
-cp .env.example .env
-# Add your API keys to .env
+cp .env.example .env # Add your API keys to .env
 ```
 
 ```bash
 mkdir .streamlit
 touch .streamlit/credentials.toml
+
 # Add your Streamlit credentials for being able to have authenticated access to the UI
 [auth]
 redirect_uri = "http://localhost:8501/oauth2callback"
