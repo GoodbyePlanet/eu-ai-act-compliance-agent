@@ -27,16 +27,11 @@ server_metadata_url = "https://accounts.google.com/.well-known/openid-configurat
 Prerequisites:
 - python >= 3.9
 
-# TODO: Check if ADK UI is still working :)
+#### TODO: Check if ADK UI is still working :)
 ```bash
 # To start ADK UI
 make venv
 make web
-```
-
-```bash
-# To start Postgres DB
-docker-compose up -d db
 ```
 
 ```bash
