@@ -5,6 +5,23 @@ This package contains the FastAPI application and request/response models.
 """
 
 from compliance_agent.api.app import create_app
-from compliance_agent.api.models import AssessRequest
+from compliance_agent.api.models import (
+    AgentProtocol,
+    AssessRequest,
+    AssessResponse,
+    HealthResponse,
+    SessionInfo,
+    SessionListItem,
+    SessionListResponse,
+)
 
-__all__ = ["create_app", "AssessRequest"]
+__all__ = [
+    "create_app",
+    "AgentProtocol",
+    "AssessRequest",
+    "AssessResponse",
+    "HealthResponse",
+    "SessionInfo",
+    "SessionListItem",
+    "SessionListResponse",
+]

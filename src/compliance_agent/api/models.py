@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional, Protocol, runtime_checkable
 
 from pydantic import BaseModel
 
@@ -16,3 +16,48 @@ class AssessResponse(BaseModel):
 
     summary: str
     session_id: str
+
+
+class SessionInfo(BaseModel):
+    """Model for session information returned by recent session endpoint."""
+
+    session_id: str
+    ai_tool: Optional[str] = None
+    summary: Optional[str] = None
+
+
+class SessionListItem(BaseModel):
+    """Model for individual session in the sessions list."""
+
+    session_id: str
+    ai_tool: str
+    created_at: str
+
+
+class SessionListResponse(BaseModel):
+    """Response model for listing user sessions."""
+
+    sessions: List[SessionListItem]
+
+
+class HealthResponse(BaseModel):
+    """Response model for health check endpoint."""
+
+    status: str
+
+
+@runtime_checkable
+class AgentProtocol(Protocol):
+    """Protocol defining the interface for compliance assessment agents."""
+
+    async def execute(self, request: AssessRequest) -> Optional[AssessResponse]:
+        """
+        Execute a compliance assessment for the given request.
+
+        Args:
+            request: Assessment request containing AI tool name and optional session ID.
+
+        Returns:
+            Assessment response with summary and session ID, or None if execution fails.
+        """
+        ...

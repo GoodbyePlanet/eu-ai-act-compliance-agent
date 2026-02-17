@@ -92,12 +92,15 @@ class PDFService:
         Convert Markdown text to ReportLab Paragraph elements for enhanced formatting.
         """
         try:
+
             def replace_links(match):
                 text = match.group(1)  # Group 1 is the visible text
                 url = match.group(2)  # Group 2 is the actual URL
                 return f'<a href="{url}" color="blue">{text}</a>'
 
-            markdown_text = re.sub(r"\[([^\]]+)\]\(([^\)]+)\)", replace_links, markdown_text)
+            markdown_text = re.sub(
+                r"\[([^\]]+)\]\(([^\)]+)\)", replace_links, markdown_text
+            )
 
             md = markdown.Markdown(
                 extensions=[
@@ -194,7 +197,9 @@ class PDFService:
             raise RuntimeError(f"Failed to generate PDF: {e}") from e
 
 
-async def get_report_for_session(session_id: str, user_email: str = None) -> Optional[dict]:
+async def get_report_for_session(
+    session_id: str, user_email: Optional[str] = None
+) -> Optional[dict]:
     """
     Retrieve the compliance report for a given session.
 
