@@ -53,7 +53,7 @@ def render_sidebar():
                 display_tool = tool if len(tool) <= 10 else tool[:10] + "..."
 
                 time_str = session.get("created_at", "")
-                formatted_time = time_str  # Default fallback
+                formatted_time = time_str
 
                 if time_str:
                     try:
@@ -71,3 +71,4 @@ def render_sidebar():
             st.write(f"Logged in as: **{st.user.email}**")
             if st.button("Log out", use_container_width=True):
                 st.logout()
+                st.stop()
