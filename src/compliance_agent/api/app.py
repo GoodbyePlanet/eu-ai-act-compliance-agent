@@ -62,6 +62,12 @@ def create_app(agent):
     async def get_recent_session(user_email: str):
         """
         Fetches the most recent session for a user if it was created/updated within the last 5 minutes.
+
+        Args:
+            user_email: User email address.
+
+        Returns:
+            Recent session data if found, otherwise None.
         """
         if not user_email:
             raise HTTPException(status_code=400, detail="user_email is required")
@@ -102,6 +108,12 @@ def create_app(agent):
     async def get_user_sessions(user_email: str):
         """
         Fetches all historical sessions for the sidebar, ordered by update date (descending).
+
+        Args:
+            user_email: User email address.
+
+        Returns:
+            User sessions data if found, otherwise empty list.
         """
         if not user_email:
             raise HTTPException(status_code=400, detail="user_email is required")
@@ -118,11 +130,9 @@ def create_app(agent):
 
         formatted_sessions = []
         for session in sorted_sessions:
-            # Convert ADK's Unix timestamp to a readable string
             raw_date = datetime.fromtimestamp(session.last_update_time, tz=timezone.utc)
             date_str = raw_date.strftime("%b %d, %I:%M %p")
 
-            # Try to get the tool name from the state.
             state = getattr(session, "state", {})
             ai_tool = state.get("ai_tool", "Unknown Tool")
 
@@ -138,6 +148,13 @@ def create_app(agent):
     async def get_specific_session(session_id: str, user_email: str):
         """
         Loads a specific session from history.
+
+        Args:
+            session_id: Unique session identifier.
+            user_email: User email address.
+
+        Returns:
+            User session by session ID if found, otherwise HTTP 404.
         """
         if not user_email:
             raise HTTPException(status_code=400, detail="user_email is required")

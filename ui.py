@@ -166,14 +166,11 @@ st.title("AI Tool Assessment Agent")
 is_active_session = st.session_state.ai_tool_name is not None
 
 if is_active_session:
-    # They are looking at an existing report
     st.info(f"Currently assessing: **{st.session_state.ai_tool_name}**")
     input_label = "Provide feedback, ask for revisions, or ask follow-up questions:"
     input_placeholder = "e.g., Re-write the summary to focus strictly on GDPR compliance..."
-    # Do NOT pre-fill the text area with the tool name if it's a follow up
     input_value = ""
 else:
-    # They are starting a brand new assessment
     input_label = "Write the name of the AI tool to assess"
     input_placeholder = "e.g. Notion AI"
     input_value = ""

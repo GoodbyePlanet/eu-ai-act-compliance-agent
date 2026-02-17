@@ -89,7 +89,6 @@ async def execute(request):
         logger.info(f"Session {current_session} retrieved successfully.")
         session_obj = existing_session
 
-        # Check if the tool was already defined in a previous turn
         if session_obj.state and session_obj.state.get("ai_tool"):
             is_follow_up = True
         else:
@@ -148,7 +147,6 @@ async def execute(request):
                 session_obj = await session_service.get_session(
                     app_name=APP_NAME, user_id=user_email, session_id=current_session
                 )
-
                 sys_event = Event(
                     invocation_id=str(uuid.uuid4()),
                     author="system",
