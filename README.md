@@ -9,15 +9,34 @@ compliant with EU AI Act obligations and therefore suitable for integration into
 #### Running on localhost
 ```bash
 cp .env.example .env
+# Add your API keys to .env
+```
+
+```bash
+mkdir .streamlit
+touch .streamlit/credentials.toml
+# Add your Streamlit credentials for being able to have authenticated access to the UI
+[auth]
+redirect_uri = "http://localhost:8501/oauth2callback"
+cookie_secret = "<random string>" # python -c "import secrets; print(secrets.token_hex(32))"
+client_id = "<client id from Google console>"
+client_secret = "<client secret from Google console>"
+server_metadata_url = "https://accounts.google.com/.well-known/openid-configuration"
 ```
 
 Prerequisites:
 - python >= 3.9
 
+#### TODO: Check if ADK UI is still working :)
 ```bash
 # To start ADK UI
 make venv
 make web
+```
+
+```bash
+# To start Postgres DB
+docker-compose up -d db
 ```
 
 ```bash
