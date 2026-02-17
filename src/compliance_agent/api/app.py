@@ -69,6 +69,7 @@ def create_app(agent):
         Returns:
             Recent session data if found, otherwise None.
         """
+        logger.info(f"Fetching recent session for user with email: {user_email}")
         if not user_email:
             raise HTTPException(status_code=400, detail="user_email is required")
 
@@ -88,7 +89,6 @@ def create_app(agent):
 
         # Check if it was updated within the last 5 minutes (300 seconds)
         if time.time() - latest_session_meta.last_update_time <= 300:
-            # We fetch the full session to ensure we have the complete state dictionary
             full_session = await session_service.get_session(
                 app_name=APP_NAME,
                 user_id=user_email,
@@ -115,6 +115,7 @@ def create_app(agent):
         Returns:
             User sessions data if found, otherwise empty list.
         """
+        logger.info(f"Fetching sessions for user with email: {user_email}")
         if not user_email:
             raise HTTPException(status_code=400, detail="user_email is required")
 
@@ -145,7 +146,7 @@ def create_app(agent):
         return {"sessions": formatted_sessions}
 
     @app.get("/sessions/{session_id}")
-    async def get_specific_session(session_id: str, user_email: str):
+    async def get_session_by_id(session_id: str, user_email: str):
         """
         Loads a specific session from history.
 
@@ -156,6 +157,7 @@ def create_app(agent):
         Returns:
             User session by session ID if found, otherwise HTTP 404.
         """
+        logger.info(f"Fetching session {session_id} for user with email: {user_email}")
         if not user_email:
             raise HTTPException(status_code=400, detail="user_email is required")
 
