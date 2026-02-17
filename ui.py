@@ -101,8 +101,17 @@ with st.sidebar:
     st.markdown(
         """
         <style>
+            [data-testid="stSidebarHeader"] {
+                display: flex;
+                -webkit-box-pack: justify;
+                justify-content: space-between;
+                -webkit-box-align: center;
+                margin-top: 1rem;
+                margin-bottom: 0;
+                height: 0;
+            }
             [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
-                height: 100vh;
+                height: 95vh;
             }
             /* Target the very last container inside the sidebar and push it down */
             [data-testid="stSidebar"] [data-testid="stVerticalBlock"] > div:last-child {
@@ -150,7 +159,6 @@ with st.sidebar:
         if st.button("Log out", use_container_width=True):
             st.logout()
 
-
 # --- Main Page UI ---
 st.markdown(f"Welcome, **{st.user.name}**")
 st.title("AI Tool Assessment Agent")
@@ -174,7 +182,7 @@ user_input = st.text_area(
     input_label,
     value=input_value,
     placeholder=input_placeholder,
-    key=f"input_{st.session_state.session_id}" # Force UI refresh on session change
+    key=f"input_{st.session_state.session_id}"  # Force UI refresh on session change
 )
 
 if st.button("Submit Assessment"):
