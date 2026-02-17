@@ -1,10 +1,10 @@
 import io
 import logging
 import os
-import time
 from datetime import datetime, timezone
 from typing import List, Optional
 
+import time
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 from starlette.responses import StreamingResponse
@@ -14,6 +14,7 @@ from compliance_agent.api.models import (
     AgentProtocol,
     AssessRequest,
     AssessResponse,
+    ComponentHealth,
     HealthResponse,
     SessionInfo,
     SessionListItem,
@@ -242,6 +243,26 @@ def create_app(agent: AgentProtocol) -> FastAPI:
 
     @app.get("/health", response_model=HealthResponse)
     async def health() -> HealthResponse:
-        return HealthResponse(status="healthy")
+        """
+        Check service health including database connectivity.
+
+        Returns:
+            HealthResponse with overall status and component-level health details.
+        """
+        db_health = ComponentHealth(status="healthy")
+
+        try:
+            # Attempt to list sessions with minimal data to verify DB connectivity
+            await session_service.list_sessions(
+                app_name=APP_NAME, user_id="health-check"
+            )
+        except Exception as e:
+            logger.error(f"Database health check failed: {e}")
+            db_health = ComponentHealth(status="unhealthy", message=str(e))
+
+        # Overall status is unhealthy if any component is unhealthy
+        overall_status = "healthy" if db_health.status == "healthy" else "unhealthy"
+
+        return HealthResponse(status=overall_status, database=db_health)
 
     return app

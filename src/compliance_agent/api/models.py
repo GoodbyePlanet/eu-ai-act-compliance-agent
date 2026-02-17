@@ -40,10 +40,18 @@ class SessionListResponse(BaseModel):
     sessions: List[SessionListItem]
 
 
+class ComponentHealth(BaseModel):
+    """Health status for an individual component."""
+
+    status: str
+    message: Optional[str] = None
+
+
 class HealthResponse(BaseModel):
     """Response model for health check endpoint."""
 
     status: str
+    database: Optional[ComponentHealth] = None
 
 
 @runtime_checkable
