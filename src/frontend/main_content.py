@@ -31,7 +31,6 @@ def render_main_content():
             st.warning("Please fill in the name of the AI tool to assess.")
         else:
             with st.spinner("Agent is browsing the web for compliance docs... This may take a few minutes...."):
-                # Call the backend via the separated API client
                 payload = {"ai_tool": user_input, "session_id": st.session_state.session_id,
                            "user_email": st.user.email}
                 response = run_assessment(payload)
