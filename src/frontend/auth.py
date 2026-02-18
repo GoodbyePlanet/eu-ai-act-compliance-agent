@@ -8,7 +8,7 @@ def require_login():
             unsafe_allow_html=True,
         )
         st.markdown(
-            "<p style='text-align: center; max-width: 800px;'>To start the EU AI Act assessment,"
+            "<p style='text-align: center; max-width: 800px;'>To start AI tool assessment,"
             " please authenticate with your Google Workspace account.</p>",
             unsafe_allow_html=True,
         )

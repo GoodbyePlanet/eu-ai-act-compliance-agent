@@ -10,10 +10,8 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# 2. Authentication Guard
 require_login()
 
-# 3. Session State Initialization Logic
 if "initialized" not in st.session_state:
     recent_session = fetch_recent_session(st.user.email)
 
