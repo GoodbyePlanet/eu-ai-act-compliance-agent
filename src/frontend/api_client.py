@@ -102,7 +102,7 @@ def run_assessment(payload: AssessRequest) -> requests.Response:
     Returns:
         HTTP response from the assessment API.
     """
-    return requests.post(f"{API_URL}/run", json=payload.model_dump())
+    return requests.post(f"{API_URL}/run", json=payload)
 
 
 def generate_pdf(session_id: str, email: str) -> requests.Response:
