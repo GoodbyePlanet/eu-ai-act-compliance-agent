@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About EU AI ACT | Assessment Agent</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg: #ffffff;
+            --surface: #f9f9f9;
+            --border: #e0e0e0;
+            --text-main: #000000;
+            --text-dim: #666666;
+            --accent: #000000;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 8%;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+        }
+
+        .logo {
+            font-weight: 900;
+            letter-spacing: -1.5px;
+            font-size: 1.4rem;
+            text-transform: uppercase;
+        }
+
+        main {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 80px 8% 100px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 8px 16px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 1.5rem;
+        }
+
+        h1 {
+            font-size: clamp(2.4rem, 6vw, 4.2rem);
+            font-weight: 900;
+            line-height: 1.05;
+            letter-spacing: -2px;
+            margin-bottom: 1.2rem;
+        }
+
+        .subtitle {
+            color: var(--text-dim);
+            max-width: 760px;
+            margin-bottom: 2.5rem;
+        }
+
+        .section-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .panel {
+            border: 1px solid var(--border);
+            padding: 1.4rem;
+            background: var(--surface);
+        }
+
+        .panel h2,
+        .panel h3 {
+            font-size: 1.1rem;
+            margin-bottom: 0.6rem;
+            font-weight: 800;
+        }
+
+        .panel p,
+        .panel li {
+            color: var(--text-dim);
+            font-size: 0.95rem;
+        }
+
+        .panel ul {
+            list-style-position: inside;
+        }
+
+        .actions {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-top: 2rem;
+        }
+
+        .button {
+            background: var(--accent);
+            color: white;
+            padding: 14px 22px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            text-decoration: none;
+            border-radius: 2px;
+            border: 1px solid var(--accent);
+            transition: 0.2s ease-in-out;
+        }
+
+        .button.secondary {
+            background: transparent;
+            color: var(--text-main);
+        }
+
+        .button:hover {
+            opacity: 0.85;
+            transform: scale(0.99);
+        }
+
+        .disclaimer {
+            border-left: 3px solid var(--border);
+            padding: 0.8rem 1rem;
+            margin-top: 2.2rem;
+            color: var(--text-dim);
+            font-size: 0.9rem;
+        }
+
+        footer {
+            padding: 45px 8%;
+            text-align: center;
+            border-top: 1px solid var(--border);
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            letter-spacing: 1px;
+        }
+
+        @media (max-width: 900px) {
+            .section-grid {
+                grid-template-columns: 1fr;
+            }
+            .actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .button {
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="logo">AI.ACT.AGENT</div>
+        <div style="font-weight: 700; font-size: 0.7rem;">[ EU AI ACT BRIEF ]</div>
+    </nav>
+
+    <main>
+        <span class="badge">Regulation Overview</span>
+        <h1>About the EU AI Act</h1>
+        <p class="subtitle">
+            The EU AI Act is a risk-based regulation for AI systems used in the EU market.
+            It classifies AI use cases by risk level and applies obligations proportionally,
+            with the strictest obligations on high-risk systems and outright bans for unacceptable-risk practices.
+        </p>
+
+        <section class="section-grid">
+            <article class="panel">
+                <h2>Risk Tiers</h2>
+                <ul>
+                    <li><strong>Unacceptable Risk:</strong> Prohibited use cases.</li>
+                    <li><strong>High Risk:</strong> Strong governance, documentation, and oversight obligations.</li>
+                    <li><strong>Limited Risk:</strong> Transparency duties (for example, user-facing disclosures).</li>
+                    <li><strong>Minimal Risk:</strong> Generally no additional mandatory requirements under the Act.</li>
+                </ul>
+            </article>
+
+            <article class="panel">
+                <h2>Who Is Impacted</h2>
+                <p>
+                    Providers, deployers, importers, and distributors of AI systems may all have obligations depending on
+                    role, market placement, and use case context.
+                </p>
+            </article>
+
+            <article class="panel">
+                <h3>Typical High-Risk Obligations</h3>
+                <ul>
+                    <li>Risk management process and technical documentation.</li>
+                    <li>Data governance and quality controls.</li>
+                    <li>Logging, monitoring, and incident handling.</li>
+                    <li>Human oversight and user instructions.</li>
+                    <li>Conformity assessment and post-market obligations.</li>
+                </ul>
+            </article>
+
+            <article class="panel">
+                <h3>How This Agent Helps</h3>
+                <p>
+                    This tool supports initial compliance discovery by mapping your AI tool profile to likely obligations,
+                    highlighting potential gaps, and producing report-ready summaries for internal review.
+                </p>
+            </article>
+        </section>
+
+        <div class="disclaimer">
+            This page is informational and does not constitute legal advice.
+            Confirm final obligations with legal counsel for your specific use case.
+        </div>
+
+        <div class="actions">
+            <a class="button secondary" href="/">Back to Home</a>
+            <a class="button" href="http://localhost:8501">Start Assessment</a>
+        </div>
+    </main>
+
+    <footer>
+        &copy; 2026 COMPLIANCE AGENT. REGULATORY AWARENESS MODE.
+    </footer>
+</body>
+</html>
