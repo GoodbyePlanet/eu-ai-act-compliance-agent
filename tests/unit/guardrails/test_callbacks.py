@@ -4,7 +4,11 @@ Unit tests for guardrails callbacks.
 Run with: pytest tests/unit/guardrails/test_callbacks.py -v
 """
 
+import logging
+from typing import cast
 from unittest.mock import Mock
+
+from google.adk.tools.tool_context import ToolContext
 
 from compliance_agent.guardrails.callbacks import (
     validate_input_guardrail,
@@ -16,6 +20,8 @@ from compliance_agent.guardrails.callbacks import (
     MAX_INPUT_LENGTH,
 )
 from tests.unit.guardrails.conftest import mock_event
+
+mock_tool_context = cast(ToolContext, Mock())
 
 
 class TestValidateInputGuardrail:
@@ -239,7 +245,7 @@ class TestToolInputGuardrail:
         args = {"query": "ChatGPT privacy policy GDPR compliance"}
 
         # Act
-        result = tool_input_guardrail(tool, args)
+        result = tool_input_guardrail(tool, args, tool_context=mock_tool_context)
 
         # Assert
         assert result is None
@@ -251,7 +257,7 @@ class TestToolInputGuardrail:
         args = {"query": "how to hack ChatGPT"}
 
         # Act
-        result = tool_input_guardrail(tool, args)
+        result = tool_input_guardrail(tool, args, tool_context=mock_tool_context)
 
         # Assert
         assert result is not None
@@ -265,7 +271,7 @@ class TestToolInputGuardrail:
         args = {"query": "exploit vulnerabilities in AI"}
 
         # Act
-        result = tool_input_guardrail(tool, args)
+        result = tool_input_guardrail(tool, args, tool_context=mock_tool_context)
 
         # Assert
         assert result is not None
@@ -279,7 +285,7 @@ class TestToolInputGuardrail:
         args = {"query": "malware distribution methods"}
 
         # Act
-        result = tool_input_guardrail(tool, args)
+        result = tool_input_guardrail(tool, args, tool_context=mock_tool_context)
 
         # Assert
         assert result is not None
@@ -293,7 +299,7 @@ class TestToolInputGuardrail:
         args = {"query": "illegal activities with AI"}
 
         # Act
-        result = tool_input_guardrail(tool, args)
+        result = tool_input_guardrail(tool, args, tool_context=mock_tool_context)
 
         # Assert
         assert result is not None
@@ -307,7 +313,7 @@ class TestToolInputGuardrail:
         args = {"query": "AI for weapons development"}
 
         # Act
-        result = tool_input_guardrail(tool, args)
+        result = tool_input_guardrail(tool, args, tool_context=mock_tool_context)
 
         # Assert
         assert result is not None
@@ -321,7 +327,7 @@ class TestToolInputGuardrail:
         args = {"query": "drugs manufacturing AI"}
 
         # Act
-        result = tool_input_guardrail(tool, args)
+        result = tool_input_guardrail(tool, args, tool_context=mock_tool_context)
 
         # Assert
         assert result is not None
@@ -335,7 +341,7 @@ class TestToolInputGuardrail:
         args = {"query": "phishing email templates"}
 
         # Act
-        result = tool_input_guardrail(tool, args)
+        result = tool_input_guardrail(tool, args, tool_context=mock_tool_context)
 
         # Assert
         assert result is not None
@@ -349,7 +355,7 @@ class TestToolInputGuardrail:
         args = {"query": "password crack tools"}
 
         # Act
-        result = tool_input_guardrail(tool, args)
+        result = tool_input_guardrail(tool, args, tool_context=mock_tool_context)
 
         # Assert
         assert result is not None
@@ -363,39 +369,39 @@ class TestToolInputGuardrail:
         args = {"query": "HACK THE SYSTEM"}
 
         # Act
-        result = tool_input_guardrail(tool, args)
+        result = tool_input_guardrail(tool, args, tool_context=mock_tool_context)
 
         # Assert
         assert result is not None
         assert result["blocked"] is True
 
-    def test_non_compliance_query_returns_none_with_warning(self, mock_tool, capsys):
+    def test_non_compliance_query_returns_none_with_warning(self, mock_tool, caplog):
         """Non-compliance query should return None but log a warning."""
         # Arrange
         tool = mock_tool(name="deep_compliance_search")
         args = {"query": "best restaurants in paris"}
 
         # Act
-        result = tool_input_guardrail(tool, args)
+        with caplog.at_level(logging.WARNING, logger="compliance_agent.guardrails.callbacks"):
+            result = tool_input_guardrail(tool, args, tool_context=mock_tool_context)
 
         # Assert
         assert result is None
-        captured = capsys.readouterr()
-        assert "GUARDRAIL WARNING" in captured.out
+        assert "GUARDRAIL WARNING" in caplog.text
 
-    def test_compliance_query_logs_approval(self, mock_tool, capsys):
+    def test_compliance_query_logs_approval(self, mock_tool, caplog):
         """Compliance-related query should log an approval message."""
         # Arrange
         tool = mock_tool(name="deep_compliance_search")
         args = {"query": "GDPR compliance documentation"}
 
         # Act
-        result = tool_input_guardrail(tool, args)
+        with caplog.at_level(logging.DEBUG, logger="compliance_agent.guardrails.callbacks"):
+            result = tool_input_guardrail(tool, args, tool_context=mock_tool_context)
 
         # Assert
         assert result is None
-        captured = capsys.readouterr()
-        assert "Search query approved" in captured.out
+        assert "Search query approved" in caplog.text
 
     def test_different_tool_name_not_filtered(self, mock_tool):
         """Tools without compliance_search in name should not be filtered."""
@@ -404,7 +410,7 @@ class TestToolInputGuardrail:
         args = {"query": "hack the system"}
 
         # Act
-        result = tool_input_guardrail(tool, args)
+        result = tool_input_guardrail(tool, args, tool_context=mock_tool_context)
 
         # Assert
         assert result is None
@@ -416,7 +422,7 @@ class TestToolInputGuardrail:
         args = {"query": "illegal activities"}
 
         # Act
-        result = tool_input_guardrail(tool, args)
+        result = tool_input_guardrail(tool, args, tool_context=mock_tool_context)
 
         # Assert
         assert result is not None
@@ -429,7 +435,7 @@ class TestToolInputGuardrail:
         args = {"query": ""}
 
         # Act
-        result = tool_input_guardrail(tool, args)
+        result = tool_input_guardrail(tool, args, tool_context=mock_tool_context)
 
         # Assert
         assert result is None
@@ -441,7 +447,7 @@ class TestToolInputGuardrail:
         args = {}
 
         # Act
-        result = tool_input_guardrail(tool, args)
+        result = tool_input_guardrail(tool, args, tool_context=mock_tool_context)
 
         # Assert
         assert result is None
@@ -453,7 +459,7 @@ class TestToolInputGuardrail:
         args = {"query": "hack the system"}
 
         # Act
-        result = tool_input_guardrail(tool, args)
+        result = tool_input_guardrail(tool, args, tool_context=mock_tool_context)
 
         # Assert - should not raise exception, tool converted to string
         assert result is None
@@ -473,17 +479,17 @@ class TestOutputValidationGuardrail:
         # Assert
         assert result is None
 
-    def test_logs_completion_message(self, mock_callback_context, capsys):
+    def test_logs_completion_message(self, mock_callback_context, caplog):
         """Output validation should log completion message."""
         # Arrange
         context = mock_callback_context(user_input="ChatGPT")
 
         # Act
-        output_validation_guardrail(context)
+        with caplog.at_level(logging.DEBUG, logger="compliance_agent.guardrails.callbacks"):
+            output_validation_guardrail(context)
 
         # Assert
-        captured = capsys.readouterr()
-        assert "GUARDRAIL: Output validation completed" in captured.out
+        assert "GUARDRAIL: Output validation completed" in caplog.text
 
     def test_handles_empty_context(self, mock_callback_context):
         """Output validation should handle empty context."""

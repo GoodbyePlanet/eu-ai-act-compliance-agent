@@ -97,6 +97,10 @@
             background: var(--surface);
         }
 
+        .panel.wide {
+            grid-column: 1 / -1;
+        }
+
         .panel h2,
         .panel h3 {
             font-size: 1.1rem;
@@ -184,39 +188,125 @@
         <span class="badge">Regulation Overview</span>
         <h1>About the EU AI Act</h1>
         <p class="subtitle">
-            The EU AI Act is a risk-based regulation for AI systems used in the EU market.
-            It classifies AI use cases by risk level and applies obligations proportionally,
-            with the strictest obligations on high-risk systems and outright bans for unacceptable-risk practices.
+            The EU AI Act is a horizontal, risk-based Regulation that sets harmonized rules for AI in the European
+            market. It entered into force on August 1, 2024 and applies obligations based on risk: the higher the
+            risk, the stricter the obligations.
+        </p>
+        <p class="subtitle" style="margin-top: -1rem; margin-bottom: 2.5rem;">
+            It is called <strong>horizontal</strong> because it applies across sectors (for example, healthcare,
+            employment, finance, education, and public services), rather than being limited to one specific industry.
         </p>
 
         <section class="section-grid">
             <article class="panel">
-                <h2>Risk Tiers</h2>
-                <ul>
-                    <li><strong>Unacceptable Risk:</strong> Prohibited use cases.</li>
-                    <li><strong>High Risk:</strong> Strong governance, documentation, and oversight obligations.</li>
-                    <li><strong>Limited Risk:</strong> Transparency duties (for example, user-facing disclosures).</li>
-                    <li><strong>Minimal Risk:</strong> Generally no additional mandatory requirements under the Act.</li>
-                </ul>
-            </article>
-
-            <article class="panel">
-                <h2>Who Is Impacted</h2>
+                <h2>Why It Exists</h2>
                 <p>
-                    Providers, deployers, importers, and distributors of AI systems may all have obligations depending on
-                    role, market placement, and use case context.
+                    The Act is designed to reduce risks to health, safety, and fundamental rights while enabling
+                    trustworthy AI adoption across industries, including already regulated sectors such as medical
+                    devices and transport.
                 </p>
             </article>
 
             <article class="panel">
-                <h3>Typical High-Risk Obligations</h3>
+                <h2>Who Is Affected</h2>
+                <p>
+                    The rules apply across the AI value chain: providers, deployers, importers, and distributors,
+                    inside and outside the EU when AI output is used in the EU.
+                </p>
+            </article>
+
+            <article class="panel wide">
+                <h2>Risk Tiers</h2>
                 <ul>
-                    <li>Risk management process and technical documentation.</li>
-                    <li>Data governance and quality controls.</li>
-                    <li>Logging, monitoring, and incident handling.</li>
-                    <li>Human oversight and user instructions.</li>
-                    <li>Conformity assessment and post-market obligations.</li>
+                    <li><strong>Unacceptable Risk:</strong> Prohibited use cases.</li>
+                    <li><strong>High Risk:</strong> AI in high-impact contexts with strict safety and governance duties.</li>
+                    <li><strong>Limited Risk:</strong> Transparency obligations for potentially deceptive AI interactions.</li>
+                    <li><strong>No / Minimal Risk:</strong> Most AI use cases, with lighter obligations.</li>
                 </ul>
+            </article>
+
+            <article class="panel wide">
+                <h3>Provider vs Deployer</h3>
+                <p>
+                    A <strong>provider</strong> is the actor that develops an AI system (or places it on the market under
+                    its own name/trademark), and typically carries the main build-time and pre-market compliance duties.
+                    A <strong>deployer</strong> is the actor that uses the AI system in operations when interacting with
+                    people (for example in hiring, insurance, healthcare, or public services). In simple terms:
+                    provider = builder/seller, deployer = user/operator. Example: Microsoft can be a provider of an AI
+                    service, while an insurance company using that service for customer decisions is a deployer.
+                </p>
+            </article>
+
+            <article class="panel wide">
+                <h3>Unacceptable Risk (Prohibited)</h3>
+                <ul>
+                    <li>Subliminal manipulation causing significant harm.</li>
+                    <li>Exploitation of vulnerable groups (for example children).</li>
+                    <li>Mass social scoring and predictive policing based on profiling.</li>
+                    <li>Untargeted scraping of faces from internet/CCTV for face databases.</li>
+                    <li>Emotion recognition in workplaces or education settings.</li>
+                    <li>Certain mass real-time remote biometric identification in public spaces.</li>
+                </ul>
+            </article>
+
+            <article class="panel wide">
+                <h3>High-Risk Areas</h3>
+                <ul>
+                    <li>Biometrics and certain AI-enabled surveillance contexts.</li>
+                    <li>Education and employment decisions with life-impacting effects.</li>
+                    <li>Essential services such as credit, health, and insurance access.</li>
+                    <li>Law enforcement, migration, asylum, and border-control contexts.</li>
+                    <li>Critical infrastructure, justice, and election-related systems.</li>
+                </ul>
+            </article>
+
+            <article class="panel wide">
+                <h3>High-Risk Provider Obligations</h3>
+                <ul>
+                    <li>Conformity assessment before market placement.</li>
+                    <li>Risk management and data governance controls.</li>
+                    <li>Technical documentation, logging, traceability, and transparency.</li>
+                    <li>Human oversight design and robustness/cybersecurity measures.</li>
+                    <li>Quality management and registration duties where required.</li>
+                </ul>
+            </article>
+
+            <article class="panel wide">
+                <h3>High-Risk Deployer Obligations</h3>
+                <ul>
+                    <li>Use systems according to instructions and maintain relevant logs.</li>
+                    <li>Monitor operation and report serious incidents.</li>
+                    <li>Inform affected workers and natural persons in relevant contexts.</li>
+                    <li>Conduct FRIA in specific public-authority/essential-service scenarios.</li>
+                    <li>Substantial modification can turn a deployer into a provider.</li>
+                </ul>
+            </article>
+
+            <article class="panel">
+                <h3>Limited / No-Risk AI</h3>
+                <p>
+                    Limited-risk systems such as chatbots and synthetic media tools are mainly subject to transparency
+                    requirements (for example, informing users they are interacting with AI and labeling AI-generated
+                    content). Most low-risk AI uses remain largely unregulated, aside from AI literacy expectations.
+                </p>
+            </article>
+
+            <article class="panel">
+                <h3>General-Purpose AI (GPAI)</h3>
+                <p>
+                    The Act distinguishes AI systems from AI models and sets dedicated obligations for GPAI model
+                    providers. Baseline obligations include documentation and downstream transparency. GPAI models with
+                    systemic risk face additional duties, including risk evaluation, incident reporting, and stronger
+                    cybersecurity controls.
+                </p>
+            </article>
+
+            <article class="panel">
+                <h3>Enforcement Snapshot</h3>
+                <p>
+                    Engaging in prohibited AI practices can trigger significant penalties, including fines that can reach
+                    up to 35 million EUR or 7% of annual global turnover, depending on the infringement category.
+                </p>
             </article>
 
             <article class="panel">
