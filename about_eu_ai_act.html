@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About EU AI ACT | Assessment Agent</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg: #ffffff;
+            --surface: #f9f9f9;
+            --border: #e0e0e0;
+            --text-main: #000000;
+            --text-dim: #666666;
+            --accent: #000000;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 8%;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+        }
+
+        .logo {
+            font-weight: 900;
+            letter-spacing: -1.5px;
+            font-size: 1.4rem;
+            text-transform: uppercase;
+        }
+
+        main {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 80px 8% 100px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 8px 16px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 1.5rem;
+        }
+
+        h1 {
+            font-size: clamp(2.4rem, 6vw, 4.2rem);
+            font-weight: 900;
+            line-height: 1.05;
+            letter-spacing: -2px;
+            margin-bottom: 1.2rem;
+        }
+
+        .subtitle {
+            color: var(--text-dim);
+            max-width: 760px;
+            margin-bottom: 2.5rem;
+        }
+
+        .section-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .panel {
+            border: 1px solid var(--border);
+            padding: 1.4rem;
+            background: var(--surface);
+        }
+
+        .panel.wide {
+            grid-column: 1 / -1;
+        }
+
+        .panel h2,
+        .panel h3 {
+            font-size: 1.1rem;
+            margin-bottom: 0.6rem;
+            font-weight: 800;
+        }
+
+        .panel p,
+        .panel li {
+            color: var(--text-dim);
+            font-size: 0.95rem;
+        }
+
+        .panel ul {
+            list-style-position: inside;
+        }
+
+        .actions {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-top: 2rem;
+        }
+
+        .button {
+            background: var(--accent);
+            color: white;
+            padding: 14px 22px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            text-decoration: none;
+            border-radius: 2px;
+            border: 1px solid var(--accent);
+            transition: 0.2s ease-in-out;
+        }
+
+        .button.secondary {
+            background: transparent;
+            color: var(--text-main);
+        }
+
+        .button:hover {
+            opacity: 0.85;
+            transform: scale(0.99);
+        }
+
+        .disclaimer {
+            border-left: 3px solid var(--border);
+            padding: 0.8rem 1rem;
+            margin-top: 2.2rem;
+            color: var(--text-dim);
+            font-size: 0.9rem;
+        }
+
+        footer {
+            padding: 45px 8%;
+            text-align: center;
+            border-top: 1px solid var(--border);
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            letter-spacing: 1px;
+        }
+
+        @media (max-width: 900px) {
+            .section-grid {
+                grid-template-columns: 1fr;
+            }
+            .actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .button {
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="logo">AI.ACT.AGENT</div>
+        <div style="font-weight: 700; font-size: 0.7rem;">[ EU AI ACT BRIEF ]</div>
+    </nav>
+
+    <main>
+        <span class="badge">Regulation Overview</span>
+        <h1>About the EU AI Act</h1>
+        <p class="subtitle">
+            The EU AI Act is a horizontal, risk-based Regulation that sets harmonized rules for AI in the European
+            market. It entered into force on August 1, 2024 and applies obligations based on risk: the higher the
+            risk, the stricter the obligations.
+        </p>
+        <p class="subtitle" style="margin-top: -1rem; margin-bottom: 2.5rem;">
+            It is called <strong>horizontal</strong> because it applies across sectors (for example, healthcare,
+            employment, finance, education, and public services), rather than being limited to one specific industry.
+        </p>
+
+        <section class="section-grid">
+            <article class="panel">
+                <h2>Why It Exists</h2>
+                <p>
+                    The Act is designed to reduce risks to health, safety, and fundamental rights while enabling
+                    trustworthy AI adoption across industries, including already regulated sectors such as medical
+                    devices and transport.
+                </p>
+            </article>
+
+            <article class="panel">
+                <h2>Who Is Affected</h2>
+                <p>
+                    The rules apply across the AI value chain: providers, deployers, importers, and distributors,
+                    inside and outside the EU when AI output is used in the EU.
+                </p>
+            </article>
+
+            <article class="panel wide">
+                <h2>Risk Tiers</h2>
+                <ul>
+                    <li><strong>Unacceptable Risk:</strong> Prohibited use cases.</li>
+                    <li><strong>High Risk:</strong> AI in high-impact contexts with strict safety and governance duties.</li>
+                    <li><strong>Limited Risk:</strong> Transparency obligations for potentially deceptive AI interactions.</li>
+                    <li><strong>No / Minimal Risk:</strong> Most AI use cases, with lighter obligations.</li>
+                </ul>
+            </article>
+
+            <article class="panel wide">
+                <h3>Provider vs Deployer</h3>
+                <p>
+                    A <strong>provider</strong> is the actor that develops an AI system (or places it on the market under
+                    its own name/trademark), and typically carries the main build-time and pre-market compliance duties.
+                    A <strong>deployer</strong> is the actor that uses the AI system in operations when interacting with
+                    people (for example in hiring, insurance, healthcare, or public services). In simple terms:
+                    provider = builder/seller, deployer = user/operator. Example: Microsoft can be a provider of an AI
+                    service, while an insurance company using that service for customer decisions is a deployer.
+                </p>
+            </article>
+
+            <article class="panel wide">
+                <h3>Unacceptable Risk (Prohibited)</h3>
+                <ul>
+                    <li>Subliminal manipulation causing significant harm.</li>
+                    <li>Exploitation of vulnerable groups (for example children).</li>
+                    <li>Mass social scoring and predictive policing based on profiling.</li>
+                    <li>Untargeted scraping of faces from internet/CCTV for face databases.</li>
+                    <li>Emotion recognition in workplaces or education settings.</li>
+                    <li>Certain mass real-time remote biometric identification in public spaces.</li>
+                </ul>
+            </article>
+
+            <article class="panel wide">
+                <h3>High-Risk Areas</h3>
+                <ul>
+                    <li>Biometrics and certain AI-enabled surveillance contexts.</li>
+                    <li>Education and employment decisions with life-impacting effects.</li>
+                    <li>Essential services such as credit, health, and insurance access.</li>
+                    <li>Law enforcement, migration, asylum, and border-control contexts.</li>
+                    <li>Critical infrastructure, justice, and election-related systems.</li>
+                </ul>
+            </article>
+
+            <article class="panel wide">
+                <h3>High-Risk Provider Obligations</h3>
+                <ul>
+                    <li>Conformity assessment before market placement.</li>
+                    <li>Risk management and data governance controls.</li>
+                    <li>Technical documentation, logging, traceability, and transparency.</li>
+                    <li>Human oversight design and robustness/cybersecurity measures.</li>
+                    <li>Quality management and registration duties where required.</li>
+                </ul>
+            </article>
+
+            <article class="panel wide">
+                <h3>High-Risk Deployer Obligations</h3>
+                <ul>
+                    <li>Use systems according to instructions and maintain relevant logs.</li>
+                    <li>Monitor operation and report serious incidents.</li>
+                    <li>Inform affected workers and natural persons in relevant contexts.</li>
+                    <li>Conduct FRIA in specific public-authority/essential-service scenarios.</li>
+                    <li>Substantial modification can turn a deployer into a provider.</li>
+                </ul>
+            </article>
+
+            <article class="panel">
+                <h3>Limited / No-Risk AI</h3>
+                <p>
+                    Limited-risk systems such as chatbots and synthetic media tools are mainly subject to transparency
+                    requirements (for example, informing users they are interacting with AI and labeling AI-generated
+                    content). Most low-risk AI uses remain largely unregulated, aside from AI literacy expectations.
+                </p>
+            </article>
+
+            <article class="panel">
+                <h3>General-Purpose AI (GPAI)</h3>
+                <p>
+                    The Act distinguishes AI systems from AI models and sets dedicated obligations for GPAI model
+                    providers. Baseline obligations include documentation and downstream transparency. GPAI models with
+                    systemic risk face additional duties, including risk evaluation, incident reporting, and stronger
+                    cybersecurity controls.
+                </p>
+            </article>
+
+            <article class="panel">
+                <h3>Enforcement Snapshot</h3>
+                <p>
+                    Engaging in prohibited AI practices can trigger significant penalties, including fines that can reach
+                    up to 35 million EUR or 7% of annual global turnover, depending on the infringement category.
+                </p>
+            </article>
+
+            <article class="panel">
+                <h3>How This Agent Helps</h3>
+                <p>
+                    This tool supports initial compliance discovery by mapping your AI tool profile to likely obligations,
+                    highlighting potential gaps, and producing report-ready summaries for internal review.
+                </p>
+            </article>
+        </section>
+
+        <div class="disclaimer">
+            This page is informational and does not constitute legal advice.
+            Confirm final obligations with legal counsel for your specific use case.
+        </div>
+
+        <div class="actions">
+            <a class="button secondary" href="/">Back to Home</a>
+            <a class="button" href="http://localhost:8501">Start Assessment</a>
+        </div>
+    </main>
+
+    <footer>
+        &copy; 2026 COMPLIANCE AGENT. REGULATORY AWARENESS MODE.
+    </footer>
+</body>
+</html>

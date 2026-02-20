@@ -3,7 +3,7 @@ from datetime import datetime
 
 import streamlit as st
 
-from frontend import fetch_session_by_id_and_email, fetch_session_history
+from frontend.api_client import API_URL, fetch_session_by_id_and_email, fetch_session_history
 
 
 def render_sidebar():
@@ -41,6 +41,8 @@ def render_sidebar():
             st.session_state.tool_report_resp = None
             st.session_state.pdf_data = None
             st.rerun()
+
+        st.markdown(f"[Learn about EU AI ACT]({API_URL}/about-eu-ai-act)")
 
         st.write("### Assessment History")
         history = fetch_session_history(st.user.email)

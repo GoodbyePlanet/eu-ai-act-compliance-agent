@@ -11,6 +11,7 @@ wheels/
 .streamlit/
 
 .env
+.adk
 
 # Virtual environments
 .venv

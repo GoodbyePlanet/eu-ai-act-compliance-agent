@@ -68,4 +68,4 @@ clean:
 ## test: Run all tests
 test-all:
 	@echo "--- Running all tests ---"
-	.venv/bin/pytest tests/unit/guardrails/ -v
+	.venv/bin/pytest tests/ -v

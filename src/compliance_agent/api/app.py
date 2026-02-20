@@ -26,6 +26,13 @@ from compliance_agent.services import get_report_for_session, PDFService
 logger = logging.getLogger(__name__)
 
 
+def _read_static_html(filename: str) -> str:
+    """Read an HTML file from the current working directory."""
+    path = os.path.join(os.getcwd(), filename)
+    with open(path, "r") as f:
+        return f.read()
+
+
 def create_app(agent: AgentProtocol) -> FastAPI:
     """
     Create and configure the FastAPI application.
@@ -49,10 +56,34 @@ def create_app(agent: AgentProtocol) -> FastAPI:
 
         Returns:
             Landing page HTML content.
+        Raises:
+            500 if the file is missing.
         """
-        path = os.path.join(os.getcwd(), "landing_page.html")
-        with open(path, "r") as f:
-            return f.read()
+        try:
+            return _read_static_html("landing_page.html")
+        except FileNotFoundError as e:
+            logger.error(f"Landing page file not found: {e}")
+            raise HTTPException(
+                status_code=500, detail="Landing page is not available"
+            ) from e
+
+    @app.get("/about-eu-ai-act", response_class=HTMLResponse)
+    async def read_about_eu_ai_act_page() -> str:
+        """
+        About EU AI Act page.
+
+        Returns:
+            About page HTML content.
+        Raises:
+            500 if the file is missing.
+        """
+        try:
+            return _read_static_html("about_eu_ai_act.html")
+        except FileNotFoundError as e:
+            logger.error(f"About page file not found: {e}")
+            raise HTTPException(
+                status_code=500, detail="About EU AI Act page is not available"
+            ) from e
 
     @app.post("/run", response_model=AssessResponse)
     async def run(payload: AssessRequest) -> Optional[AssessResponse]:
@@ -195,7 +226,7 @@ def create_app(agent: AgentProtocol) -> FastAPI:
 
     @app.get("/pdf")
     async def get_pdf(
-        session_id: str, user_email: Optional[str] = None
+            session_id: str, user_email: Optional[str] = None
     ) -> StreamingResponse:
         """
         Generate PDF for a given session ID
