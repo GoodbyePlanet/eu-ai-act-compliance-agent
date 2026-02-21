@@ -9,6 +9,7 @@ class AssessRequest(BaseModel):
     ai_tool: str
     session_id: Optional[str] = None
     user_email: Optional[str] = None
+    user_sub: Optional[str] = None
 
 
 class AssessResponse(BaseModel):
@@ -16,6 +17,9 @@ class AssessResponse(BaseModel):
 
     summary: str
     session_id: str
+    credits_remaining: Optional[int] = None
+    billing_status: Optional[str] = None
+    session_tool_locked: Optional[bool] = None
 
 
 class SessionInfo(BaseModel):
@@ -52,6 +56,35 @@ class HealthResponse(BaseModel):
 
     status: str
     database: Optional[ComponentHealth] = None
+
+
+class BillingStateResponse(BaseModel):
+    """Model for user billing state response."""
+
+    credits_balance: int
+    free_credits_remaining: int
+    paid_credits_remaining: int
+    can_start_new_session: bool
+    stripe_customer_exists: bool
+
+
+class CheckoutSessionRequest(BaseModel):
+    """Model for starting a Stripe checkout session."""
+
+    pack_code: str
+
+
+class CheckoutSessionResponse(BaseModel):
+    """Model returned for Stripe checkout redirection."""
+
+    checkout_url: str
+    checkout_session_id: str
+
+
+class PortalSessionResponse(BaseModel):
+    """Model returned for Stripe billing portal redirection."""
+
+    portal_url: str
 
 
 @runtime_checkable
