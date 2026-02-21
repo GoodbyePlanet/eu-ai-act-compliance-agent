@@ -32,7 +32,6 @@ def render_sidebar():
                     height: 0;
                 }
                 [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
-                    height: 95vh;
                 }
                 [data-testid="stSidebar"] [data-testid="stVerticalBlock"] > div:last-child {
                     margin-top: auto;

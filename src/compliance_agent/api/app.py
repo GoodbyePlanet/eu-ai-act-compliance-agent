@@ -122,7 +122,7 @@ def create_app(agent: AgentProtocol) -> FastAPI:
     async def billing_me(
         auth_user: AuthenticatedUser = Depends(get_authenticated_user),
     ) -> BillingStateResponse:
-        """Return current authenticated user's billing state."""
+        """Return the current authenticated user's billing state."""
         user_ref = await billing_service.ensure_user(
             google_sub=auth_user.subject,
             email=auth_user.email,
@@ -186,7 +186,7 @@ def create_app(agent: AgentProtocol) -> FastAPI:
         user_email: str,
         auth_user: AuthenticatedUser = Depends(get_authenticated_user),
     ) -> Optional[SessionInfo]:
-        """Fetch most recent session if active in last five minutes."""
+        """Fetch the most recent session if active in the last five minutes."""
         logger.info(f"Fetching recent session for user with email: {user_email}")
 
         resolved_email = auth_user.email
