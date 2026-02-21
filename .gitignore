@@ -16,3 +16,6 @@ wheels/
 # Virtual environments
 .venv
 
+# AI stuff
+PAYMENT_PLAN.md
+progress.md

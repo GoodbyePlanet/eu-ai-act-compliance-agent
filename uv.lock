@@ -781,6 +781,7 @@ dependencies = [
     { name = "fastapi" },
     { name = "google-adk", version = "1.18.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
     { name = "google-adk", version = "1.23.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
+    { name = "google-auth" },
     { name = "google-search-results" },
     { name = "greenlet", version = "3.2.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
     { name = "greenlet", version = "3.3.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
@@ -797,6 +798,7 @@ dependencies = [
     { name = "sqlalchemy" },
     { name = "streamlit", version = "1.50.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
     { name = "streamlit", version = "1.53.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
+    { name = "stripe" },
     { name = "uvicorn", version = "0.39.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
     { name = "uvicorn", version = "0.40.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
 ]
@@ -807,6 +809,7 @@ requires-dist = [
     { name = "colorlog", specifier = ">=6.10.1" },
     { name = "fastapi", specifier = ">=0.118.3" },
     { name = "google-adk", specifier = ">=1.18.0" },
+    { name = "google-auth", specifier = ">=2.41.1" },
     { name = "google-search-results", specifier = ">=2.4.2" },
     { name = "greenlet", specifier = ">=3.2.4" },
     { name = "langchain-community", specifier = ">=0.3.31" },
@@ -818,6 +821,7 @@ requires-dist = [
     { name = "reportlab", specifier = ">=4.4.9" },
     { name = "sqlalchemy", specifier = ">=2.0.46" },
     { name = "streamlit", specifier = ">=1.50.0" },
+    { name = "stripe", specifier = ">=13.0.1" },
     { name = "uvicorn", specifier = ">=0.38.0" },
 ]
 
@@ -5433,6 +5437,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/31/cc/347730d06e3950e426bf2ee06eaf9b281e18387bffa82bd69aa0f281eee3/streamlit-1.53.1.tar.gz", hash = "sha256:ae656af3b68b4bb2d669fa977606096f2021bcbaa14a454a290f8e0a37bab277", size = 8650843, upload-time = "2026-01-22T21:39:04.087Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/23/c3/5e6f6a9328d57436b658447b6f05969d435df8d31344e34ec75c3044657b/streamlit-1.53.1-py3-none-any.whl", hash = "sha256:9534d151feea485b69200dd36448f95f418c511e8c81186ceb57133bdf1443f7", size = 9111505, upload-time = "2026-01-22T21:39:01.344Z" },
+]
+
+[[package]]
+name = "stripe"
+version = "14.3.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "requests" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/49/67/8a38222a57fc2ba359c4dcb66528d94c00d803c7fde8f8d8470ad6bdccbb/stripe-14.3.0.tar.gz", hash = "sha256:4c76137d741bd43e8bb433a596c198ca20f4cdf17a8fe04604faf37c74b01978", size = 1463618, upload-time = "2026-01-28T21:20:29.856Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9e/4b/0b7d5920f2be5e42d72bdfc44a9fae57b422668bfc8dacdf2f74886f6daa/stripe-14.3.0-py3-none-any.whl", hash = "sha256:3e36b68b256c8970e99b703e195d947e2a2919095758788c7074ac4485ac255e", size = 2106980, upload-time = "2026-01-28T21:20:27.566Z" },
 ]
 
 [[package]]

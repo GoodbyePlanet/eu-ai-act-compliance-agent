@@ -24,6 +24,7 @@ cookie_secret = "<random string>" # python -c "import secrets; print(secrets.tok
 client_id = "<client id from Google console>"
 client_secret = "<client secret from Google console>"
 server_metadata_url = "https://accounts.google.com/.well-known/openid-configuration"
+expose_tokens = ["id"] # Required so UI can send ID token to the API
 ```
 
 Prerequisites:

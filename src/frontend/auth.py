@@ -1,5 +1,6 @@
 import streamlit as st
 
+
 def require_login():
     """Handles Google Workspace authentication."""
     if not st.user.is_logged_in:
@@ -19,3 +20,15 @@ def require_login():
 
         # Stop execution so the rest of the app doesn't load for unauthenticated users
         st.stop()
+
+
+def get_auth_headers() -> dict:
+    """Return bearer auth headers from Streamlit OIDC tokens."""
+    token = ""
+    if st.user.is_logged_in and hasattr(st.user, "tokens"):
+        token = st.user.tokens.get("id", "")
+
+    if not token:
+        return {}
+
+    return {"Authorization": f"Bearer {token}"}
