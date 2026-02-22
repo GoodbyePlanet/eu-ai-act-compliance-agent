@@ -90,6 +90,7 @@ def create_app(agent: AgentProtocol) -> FastAPI:
         auth_user: AuthenticatedUser = Depends(get_authenticated_user),
     ) -> Optional[AssessResponse]:
         """Run a compliance assessment for the specified AI tool."""
+        logger.info(f"Running assessment - requesting user {auth_user.email}, tool {payload.ai_tool}")
         if billing_service.is_enabled():
             user_ref = await billing_service.ensure_user(
                 google_sub=auth_user.subject,
@@ -135,23 +136,25 @@ def create_app(agent: AgentProtocol) -> FastAPI:
         payload: CheckoutSessionRequest,
         auth_user: AuthenticatedUser = Depends(get_authenticated_user),
     ) -> CheckoutSessionResponse:
-        """Create Stripe checkout session for a credit pack."""
+        """Create a Stripe checkout session for a credit pack."""
+        logger.info(f"Creating checkout session for user {auth_user.email}, pack {payload.pack_code}")
         user_ref = await billing_service.ensure_user(
             google_sub=auth_user.subject,
             email=auth_user.email,
         )
-        result = await stripe_service.create_checkout_session(
+        checkout_session_response = await stripe_service.create_checkout_session(
             user_id=user_ref.id,
             email=user_ref.email,
             pack_code=payload.pack_code,
         )
-        return CheckoutSessionResponse(**result)
+        return CheckoutSessionResponse(**checkout_session_response)
 
     @app.post("/billing/portal-session", response_model=PortalSessionResponse)
     async def create_portal_session(
         auth_user: AuthenticatedUser = Depends(get_authenticated_user),
     ) -> PortalSessionResponse:
-        """Create Stripe billing portal session."""
+        """Create a Stripe billing portal session."""
+        logger.info(f"Creating portal session for user {auth_user.email}")
         user_ref = await billing_service.ensure_user(
             google_sub=auth_user.subject,
             email=auth_user.email,
@@ -165,6 +168,7 @@ def create_app(agent: AgentProtocol) -> FastAPI:
         stripe_signature: Optional[str] = Header(default=None, alias="Stripe-Signature"),
     ) -> dict:
         """Handle Stripe webhook events with signature verification and idempotency."""
+        logger.info("Received Stripe webhook event")
         if not stripe_signature:
             raise HTTPException(status_code=400, detail="Missing Stripe-Signature header")
 
@@ -177,17 +181,19 @@ def create_app(agent: AgentProtocol) -> FastAPI:
         event_type = event.get("type", "")
         if event_type == "checkout.session.completed":
             processed, status_text = await stripe_service.process_checkout_completed(event=event, raw_payload=body)
+            logger.info(f"Processing Stripe checkout session completed event {status_text}")
+
+            # TODO: What do we do with this response?
             return {"status": status_text, "processed": processed}
 
         return {"status": "ignored", "event_type": event_type}
 
     @app.get("/sessions/recent", response_model=Optional[SessionInfo])
     async def get_recent_session(
-        user_email: str,
         auth_user: AuthenticatedUser = Depends(get_authenticated_user),
     ) -> Optional[SessionInfo]:
         """Fetch the most recent session if active in the last five minutes."""
-        logger.info(f"Fetching recent session for user with email: {user_email}")
+        logger.info(f"Fetching recent session for user with email: {auth_user.email}")
 
         resolved_email = auth_user.email
 
@@ -221,7 +227,6 @@ def create_app(agent: AgentProtocol) -> FastAPI:
 
     @app.get("/sessions", response_model=SessionListResponse)
     async def get_user_sessions(
-        user_email: str,
         auth_user: AuthenticatedUser = Depends(get_authenticated_user),
     ) -> SessionListResponse:
         """Fetch all user sessions for sidebar history."""
@@ -260,7 +265,6 @@ def create_app(agent: AgentProtocol) -> FastAPI:
     @app.get("/sessions/{session_id}", response_model=SessionInfo)
     async def get_session_by_id(
         session_id: str,
-        user_email: str,
         auth_user: AuthenticatedUser = Depends(get_authenticated_user),
     ) -> SessionInfo:
         """Load one historical session from history."""
@@ -289,7 +293,6 @@ def create_app(agent: AgentProtocol) -> FastAPI:
     @app.get("/pdf")
     async def get_pdf(
         session_id: str,
-        user_email: Optional[str] = None,
         auth_user: AuthenticatedUser = Depends(get_authenticated_user),
     ) -> StreamingResponse:
         """Generate PDF for a given session ID."""

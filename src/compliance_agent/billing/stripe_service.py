@@ -5,7 +5,9 @@ from __future__ import annotations
 import hashlib
 import logging
 import os
-from typing import Any, Dict, Optional, Tuple
+import re
+from decimal import Decimal, InvalidOperation
+from typing import Any, Dict, Tuple
 
 from sqlalchemy import select
 
@@ -39,16 +41,58 @@ class StripeService:
         if stripe is None:
             raise RuntimeError("Stripe SDK is not installed. Install `stripe` package to enable payments.")
 
-    def _price_id_for_pack(self, pack_code: str) -> str:
+    def _pack_price_config(self, pack_code: str) -> str:
         mapping = {
             "CREDITS_5": os.getenv("STRIPE_PRICE_ID_CREDITS_5"),
             "CREDITS_20": os.getenv("STRIPE_PRICE_ID_CREDITS_20"),
             "CREDITS_50": os.getenv("STRIPE_PRICE_ID_CREDITS_50"),
         }
-        price_id = mapping.get(pack_code)
-        if not price_id:
+        price_config = mapping.get(pack_code)
+        if not price_config:
             raise ValueError(f"Price ID not configured for pack code: {pack_code}")
-        return price_id
+        return price_config.strip()
+
+    def _line_item_for_pack(self, pack_code: str, credits: int) -> Dict[str, Any]:
+        """Build a valid Stripe line item from configured pack pricing."""
+        price_config = self._pack_price_config(pack_code=pack_code)
+
+        if price_config.startswith("price_"):
+            return {"price": price_config, "quantity": 1}
+
+        if re.fullmatch(r"\d+", price_config):
+            amount_minor = int((Decimal(price_config) * Decimal("100")).to_integral_value())
+            if amount_minor <= 0:
+                raise ValueError(f"Configured amount must be positive for pack code: {pack_code}")
+            return {
+                "price_data": {
+                    "currency": self._currency,
+                    "unit_amount": amount_minor,
+                    "product_data": {"name": f"Compliance Credits ({credits})"},
+                },
+                "quantity": 1,
+            }
+
+        if re.fullmatch(r"\d+(\.\d{1,2})?", price_config):
+            try:
+                amount_minor = int((Decimal(price_config) * Decimal("100")).to_integral_value())
+            except InvalidOperation as exc:
+                raise ValueError(f"Invalid configured amount for pack code: {pack_code}") from exc
+
+            if amount_minor <= 0:
+                raise ValueError(f"Configured amount must be positive for pack code: {pack_code}")
+            return {
+                "price_data": {
+                    "currency": self._currency,
+                    "unit_amount": amount_minor,
+                    "product_data": {"name": f"Compliance Credits ({credits})"},
+                },
+                "quantity": 1,
+            }
+
+        raise ValueError(
+            f"Invalid Stripe price configuration for {pack_code}. Expected Stripe Price ID (price_...) "
+            f"or numeric amount."
+        )
 
     async def get_or_create_customer(self, *, user_id: str, email: str) -> str:
         """Get existing Stripe customer id or create one and persist mapping."""
@@ -70,15 +114,19 @@ class StripeService:
 
     async def create_checkout_session(self, *, user_id: str, email: str, pack_code: str) -> Dict[str, Any]:
         """Create a stripe checkout session for a configured credit pack."""
+        logger.info("Creating Stripe checkout session for user_id=%s pack_code=%s", user_id, pack_code)
         self._require_stripe()
+
         credits = self._billing_service.pack_to_credits(pack_code)
         customer_id = await self.get_or_create_customer(user_id=user_id, email=email)
-        price_id = self._price_id_for_pack(pack_code)
+        line_item = self._line_item_for_pack(pack_code=pack_code, credits=credits)
 
         checkout = stripe.checkout.Session.create(
             mode="payment",
             customer=customer_id,
-            line_items=[{"price": price_id, "quantity": 1}],
+            line_items=[line_item],
+            billing_address_collection="required",
+            customer_update={"address": "auto", "name": "auto"},
             success_url=self._success_url,
             cancel_url=self._cancel_url,
             automatic_tax={"enabled": True},
@@ -105,13 +153,16 @@ class StripeService:
                     )
                 )
 
+        logger.info(f"Created Stripe checkout session for a user: %s", user_id, extra={"checkout_id": checkout["id"]})
         return {"checkout_url": checkout["url"], "checkout_session_id": checkout["id"]}
 
     async def create_portal_session(self, *, user_id: str, email: str) -> Dict[str, Any]:
         """Create stripe billing portal session URL."""
+        logger.info("Creating Stripe billing portal session for user_id=%s", user_id)
         self._require_stripe()
         customer_id = await self.get_or_create_customer(user_id=user_id, email=email)
         portal = stripe.billing_portal.Session.create(customer=customer_id, return_url=self._success_url)
+
         return {"portal_url": portal["url"]}
 
     def construct_event(self, payload: bytes, stripe_signature: str) -> Dict[str, Any]:
@@ -125,6 +176,7 @@ class StripeService:
 
     async def process_checkout_completed(self, *, event: Dict[str, Any], raw_payload: bytes) -> Tuple[bool, str]:
         """Process completed checkout and grant credits idempotently."""
+        logger.info("Processing Stripe checkout completed event...")
         event_id = event["id"]
         event_type = event["type"]
         payload_hash = hashlib.sha256(raw_payload).hexdigest()

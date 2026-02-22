@@ -65,7 +65,7 @@ def _verify_token(token: str) -> dict:
 
 
 async def get_authenticated_user(authorization: Optional[str] = Header(default=None)) -> AuthenticatedUser:
-    """Resolve authenticated user from a Google ID bearer token."""
+    """Resolve an authenticated user from a Google ID bearer token."""
     token = _extract_bearer_token(authorization)
     decoded = _verify_token(token)
     return AuthenticatedUser(subject=decoded["sub"], email=decoded["email"])

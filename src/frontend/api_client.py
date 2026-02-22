@@ -42,7 +42,7 @@ def _headers() -> Dict[str, str]:
 
 
 def _handle_unauthorized(response: requests.Response) -> None:
-    """Force re-authentication when backend rejects the bearer token."""
+    """Force re-authentication when the backend rejects the bearer token."""
     if response.status_code != 401:
         return
 
@@ -138,7 +138,7 @@ def generate_pdf(session_id: str, email: str) -> requests.Response:
 
 
 def fetch_billing_state() -> Optional[BillingStateDict]:
-    """Fetch current authenticated user's billing state."""
+    """Fetch the current authenticated user's billing state."""
     response = _request("GET", f"{API_URL}/billing/me", headers=_headers())
     if response and response.ok:
         return response.json()
@@ -146,7 +146,7 @@ def fetch_billing_state() -> Optional[BillingStateDict]:
 
 
 def create_checkout_session(pack_code: str) -> Optional[Dict[str, Any]]:
-    """Create checkout session for a selected credit pack."""
+    """Create a checkout session for a selected credit pack."""
     response = _request(
         "POST",
         f"{API_URL}/billing/checkout-session",
@@ -163,7 +163,7 @@ def create_checkout_session(pack_code: str) -> Optional[Dict[str, Any]]:
 
 
 def create_portal_session() -> Optional[Dict[str, Any]]:
-    """Create Stripe billing portal session for invoices/receipts."""
+    """Create a Stripe billing portal session for invoices/receipts."""
     response = _request("POST", f"{API_URL}/billing/portal-session", headers=_headers())
     if not response:
         return None
