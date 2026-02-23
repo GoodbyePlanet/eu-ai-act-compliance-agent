@@ -1,12 +1,16 @@
+import uuid
+
 import streamlit as st
 
-from frontend import run_assessment, generate_pdf
+from frontend import fetch_billing_state, generate_pdf, run_assessment
 
 
 def render_main_content():
     st.markdown(f"Welcome, **{st.user.name}**")
     st.title("AI Tool Assessment Agent")
 
+    billing_state = st.session_state.get("billing_state") or {}
+    request_units_balance = int(billing_state.get("request_units_balance", 0))
     is_active_session = st.session_state.ai_tool_name is not None
 
     if is_active_session:
@@ -23,30 +27,43 @@ def render_main_content():
         input_label,
         value=input_value,
         placeholder=input_placeholder,
-        key=f"input_{st.session_state.session_id}"  # Force UI refresh on session change
+        key=f"input_{st.session_state.session_id}",
     )
 
-    if st.button("Submit Assessment"):
+    can_submit = request_units_balance > 0
+    if not can_submit:
+        st.warning("No requests left. Buy credits to continue.")
+
+    if st.button("Submit", disabled=not can_submit):
         if not user_input:
             st.warning("Please fill in the name of the AI tool to assess.")
         else:
             with st.spinner("Agent is browsing the web for compliance docs... This may take a few minutes...."):
-                payload = {"ai_tool": user_input, "session_id": st.session_state.session_id,
-                           "user_email": st.user.email}
+                payload = {
+                    "ai_tool": user_input,
+                    "session_id": st.session_state.session_id,
+                    "request_id": str(uuid.uuid4()),
+                    "user_email": st.user.email,
+                }
                 response = run_assessment(payload)
 
                 if response.ok:
-                    res = response.json().get("summary")
-                    st.session_state.tool_report_resp = res
+                    res_json = response.json()
+                    st.session_state.tool_report_resp = res_json.get("summary")
                     if not is_active_session:
                         st.session_state.ai_tool_name = user_input
 
+                    st.session_state.billing_state = fetch_billing_state()
                     st.session_state.pdf_data = None
                     st.rerun()
                 else:
-                    st.error("Failed to assess AI tool.")
+                    detail = "Failed to assess AI tool."
+                    try:
+                        detail = response.json().get("detail", detail)
+                    except Exception:
+                        pass
+                    st.error(detail)
 
-    # Show the report and download button if data exists
     if st.session_state.tool_report_resp:
         st.divider()
 

@@ -1,11 +1,11 @@
 import io
 import logging
 import os
+import time
 from datetime import datetime, timezone
 from typing import List, Optional
 
-import time
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from starlette.responses import StreamingResponse
 
@@ -14,14 +14,26 @@ from compliance_agent.api.models import (
     AgentProtocol,
     AssessRequest,
     AssessResponse,
+    BillingStateResponse,
+    CheckoutSessionRequest,
+    CheckoutSessionResponse,
     ComponentHealth,
     HealthResponse,
+    PortalSessionResponse,
     SessionInfo,
     SessionListItem,
     SessionListResponse,
 )
+from compliance_agent.billing import (
+    AuthenticatedUser,
+    BillingService,
+    InsufficientCreditsError,
+    get_authenticated_user,
+)
+from compliance_agent.billing.db import init_billing_schema
+from compliance_agent.billing.stripe_service import StripeService
 from compliance_agent.config import APP_NAME
-from compliance_agent.services import get_report_for_session, PDFService
+from compliance_agent.services import PDFService, get_report_for_session
 
 logger = logging.getLogger(__name__)
 
@@ -34,31 +46,24 @@ def _read_static_html(filename: str) -> str:
 
 
 def create_app(agent: AgentProtocol) -> FastAPI:
-    """
-    Create and configure the FastAPI application.
-
-    Args:
-        agent: An object with an `execute` method that handles assessment requests.
-
-    Returns:
-        Configured FastAPI application instance.
-    """
+    """Create and configure the FastAPI application."""
     app = FastAPI(
         title="EU AI Act Compliance Agent",
         description="API for assessing AI tools against EU AI Act regulations",
         version="1.0.0",
     )
 
+    billing_service = BillingService()
+    stripe_service = StripeService(billing_service=billing_service)
+
+    @app.on_event("startup")
+    async def on_startup() -> None:
+        if billing_service.is_enabled():
+            await init_billing_schema()
+
     @app.get("/", response_class=HTMLResponse)
     async def read_landing_page() -> str:
-        """
-        Landing page.
-
-        Returns:
-            Landing page HTML content.
-        Raises:
-            500 if the file is missing.
-        """
+        """Landing page."""
         try:
             return _read_static_html("landing_page.html")
         except FileNotFoundError as e:
@@ -69,14 +74,7 @@ def create_app(agent: AgentProtocol) -> FastAPI:
 
     @app.get("/about-eu-ai-act", response_class=HTMLResponse)
     async def read_about_eu_ai_act_page() -> str:
-        """
-        About EU AI Act page.
-
-        Returns:
-            About page HTML content.
-        Raises:
-            500 if the file is missing.
-        """
+        """About EU AI Act page."""
         try:
             return _read_static_html("about_eu_ai_act.html")
         except FileNotFoundError as e:
@@ -86,53 +84,132 @@ def create_app(agent: AgentProtocol) -> FastAPI:
             ) from e
 
     @app.post("/run", response_model=AssessResponse)
-    async def run(payload: AssessRequest) -> Optional[AssessResponse]:
-        """
-        Run a compliance assessment for the specified AI tool.
-
-        Args:
-            payload: Assessment request containing AI tool name, session ID and user email.
-
-        Returns:
-            Assessment results including compliance summary and session ID.
-        """
-        return await agent.execute(payload)
-
-    @app.get("/sessions/recent", response_model=Optional[SessionInfo])
-    async def get_recent_session(user_email: str) -> Optional[SessionInfo]:
-        """
-        Fetches the most recent session for a user if it was created/updated within the last 5 minutes.
-
-        Args:
-            user_email: User email address.
-
-        Returns:
-            Recent session data if found, otherwise None.
-        """
-        logger.info(f"Fetching recent session for user with email: {user_email}")
-        if not user_email:
-            raise HTTPException(status_code=400, detail="user_email is required")
+    async def run(
+        payload: AssessRequest,
+        auth_user: AuthenticatedUser = Depends(get_authenticated_user),
+    ) -> Optional[AssessResponse]:
+        """Run a compliance assessment for the specified AI tool."""
+        logger.info(f"Running assessment - requesting user {auth_user.email}, tool {payload.ai_tool}")
+        if billing_service.is_enabled():
+            user_ref = await billing_service.ensure_user(
+                google_sub=auth_user.subject,
+                email=auth_user.email,
+            )
+            payload.user_sub = user_ref.id
+            payload.user_email = auth_user.email
+        else:
+            payload.user_email = auth_user.email
 
         try:
-            # list_sessions returns a ListSessionsResponse containing a list of Session objects
+            response = await agent.execute(payload)
+        except InsufficientCreditsError as exc:
+            raise HTTPException(status_code=402, detail=str(exc)) from exc
+
+        if response is None:
+            raise HTTPException(status_code=500, detail="Failed to execute assessment")
+
+        if billing_service.is_enabled() and payload.user_sub:
+            credit_state = await billing_service.get_credit_state(user_id=payload.user_sub)
+            response["request_units_remaining"] = credit_state.request_units_balance
+            response["billing_status"] = "ok"
+
+        return response
+
+    @app.get("/billing/me", response_model=BillingStateResponse)
+    async def billing_me(
+        auth_user: AuthenticatedUser = Depends(get_authenticated_user),
+    ) -> BillingStateResponse:
+        """Return the current authenticated user's billing state."""
+        user_ref = await billing_service.ensure_user(
+            google_sub=auth_user.subject,
+            email=auth_user.email,
+        )
+        state = await billing_service.get_credit_state(user_id=user_ref.id)
+        return BillingStateResponse(**state.__dict__)
+
+    @app.post("/billing/checkout-session", response_model=CheckoutSessionResponse)
+    async def create_checkout_session(
+        payload: CheckoutSessionRequest,
+        auth_user: AuthenticatedUser = Depends(get_authenticated_user),
+    ) -> CheckoutSessionResponse:
+        """Create a Stripe checkout session for a credit pack."""
+        logger.info(f"Creating checkout session for user {auth_user.email}, pack {payload.pack_code}")
+        user_ref = await billing_service.ensure_user(
+            google_sub=auth_user.subject,
+            email=auth_user.email,
+        )
+        checkout_session_response = await stripe_service.create_checkout_session(
+            user_id=user_ref.id,
+            email=user_ref.email,
+            pack_code=payload.pack_code,
+        )
+        return CheckoutSessionResponse(**checkout_session_response)
+
+    @app.post("/billing/portal-session", response_model=PortalSessionResponse)
+    async def create_portal_session(
+        auth_user: AuthenticatedUser = Depends(get_authenticated_user),
+    ) -> PortalSessionResponse:
+        """Create a Stripe billing portal session."""
+        logger.info(f"Creating portal session for user {auth_user.email}")
+        user_ref = await billing_service.ensure_user(
+            google_sub=auth_user.subject,
+            email=auth_user.email,
+        )
+        result = await stripe_service.create_portal_session(user_id=user_ref.id, email=user_ref.email)
+        return PortalSessionResponse(**result)
+
+    @app.post("/billing/webhooks/stripe")
+    async def stripe_webhook(
+        request: Request,
+        stripe_signature: Optional[str] = Header(default=None, alias="Stripe-Signature"),
+    ) -> dict:
+        """Handle Stripe webhook events with signature verification and idempotency."""
+        logger.info("Received Stripe webhook event")
+        if not stripe_signature:
+            raise HTTPException(status_code=400, detail="Missing Stripe-Signature header")
+
+        body = await request.body()
+        try:
+            event = stripe_service.construct_event(payload=body, stripe_signature=stripe_signature)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=f"Invalid webhook payload: {exc}") from exc
+
+        event_type = event.get("type", "")
+        if event_type == "checkout.session.completed":
+            processed, status_text = await stripe_service.process_checkout_completed(event=event, raw_payload=body)
+            logger.info(f"Processing Stripe checkout session completed event {status_text}")
+
+            # TODO: What do we do with this response?
+            return {"status": status_text, "processed": processed}
+
+        return {"status": "ignored", "event_type": event_type}
+
+    @app.get("/sessions/recent", response_model=Optional[SessionInfo])
+    async def get_recent_session(
+        auth_user: AuthenticatedUser = Depends(get_authenticated_user),
+    ) -> Optional[SessionInfo]:
+        """Fetch the most recent session if active in the last five minutes."""
+        logger.info(f"Fetching recent session for user with email: {auth_user.email}")
+
+        resolved_email = auth_user.email
+
+        try:
             response = await session_service.list_sessions(
-                app_name=APP_NAME, user_id=user_email
+                app_name=APP_NAME, user_id=resolved_email
             )
             sessions = response.sessions
         except Exception as e:
-            logger.error(f"Error fetching sessions for {user_email}: {e}")
+            logger.error(f"Error fetching sessions for {resolved_email}: {e}")
             return None
 
         if not sessions:
             return None
 
-        # Get the most recently updated session. ADK uses Unix timestamps for last_update_time
         latest_session_meta = max(sessions, key=lambda s: s.last_update_time)
 
-        # Check if it was updated within the last 5 minutes (300 seconds)
         if time.time() - latest_session_meta.last_update_time <= 300:
             full_session = await session_service.get_session(
-                app_name=APP_NAME, user_id=user_email, session_id=latest_session_meta.id
+                app_name=APP_NAME, user_id=resolved_email, session_id=latest_session_meta.id
             )
 
             if full_session and full_session.state:
@@ -145,30 +222,22 @@ def create_app(agent: AgentProtocol) -> FastAPI:
         return None
 
     @app.get("/sessions", response_model=SessionListResponse)
-    async def get_user_sessions(user_email: str) -> SessionListResponse:
-        """
-        Fetches all historical sessions for the sidebar, ordered by update date (descending).
-
-        Args:
-            user_email: User email address.
-
-        Returns:
-            User sessions data if found, otherwise empty list.
-        """
-        logger.info(f"Fetching sessions for user with email: {user_email}")
-        if not user_email:
-            raise HTTPException(status_code=400, detail="user_email is required")
+    async def get_user_sessions(
+        auth_user: AuthenticatedUser = Depends(get_authenticated_user),
+    ) -> SessionListResponse:
+        """Fetch all user sessions for sidebar history."""
+        resolved_email = auth_user.email
+        logger.info(f"Fetching sessions for user with email: {resolved_email}")
 
         try:
             response = await session_service.list_sessions(
-                app_name=APP_NAME, user_id=user_email
+                app_name=APP_NAME, user_id=resolved_email
             )
             user_sessions = response.sessions
         except Exception as e:
-            logger.error(f"Error fetching sessions for {user_email}: {e}")
+            logger.error(f"Error fetching sessions for {resolved_email}: {e}")
             raise HTTPException(status_code=500, detail="Failed to fetch sessions")
 
-        # Sort descending by the last update time
         sorted_sessions = sorted(
             user_sessions, key=lambda s: s.last_update_time, reverse=True
         )
@@ -190,24 +259,17 @@ def create_app(agent: AgentProtocol) -> FastAPI:
         return SessionListResponse(sessions=formatted_sessions)
 
     @app.get("/sessions/{session_id}", response_model=SessionInfo)
-    async def get_session_by_id(session_id: str, user_email: str) -> SessionInfo:
-        """
-        Loads a specific session from history.
-
-        Args:
-            session_id: Unique session identifier.
-            user_email: User email address.
-
-        Returns:
-            User session by session ID if found, otherwise HTTP 404.
-        """
-        logger.info(f"Fetching session {session_id} for user with email: {user_email}")
-        if not user_email:
-            raise HTTPException(status_code=400, detail="user_email is required")
+    async def get_session_by_id(
+        session_id: str,
+        auth_user: AuthenticatedUser = Depends(get_authenticated_user),
+    ) -> SessionInfo:
+        """Load one historical session from history."""
+        resolved_email = auth_user.email
+        logger.info(f"Fetching session {session_id} for user with email: {resolved_email}")
 
         try:
             session_data = await session_service.get_session(
-                app_name=APP_NAME, user_id=user_email, session_id=session_id
+                app_name=APP_NAME, user_id=resolved_email, session_id=session_id
             )
         except Exception as e:
             logger.error(f"Error fetching session {session_id}: {e}")
@@ -226,20 +288,12 @@ def create_app(agent: AgentProtocol) -> FastAPI:
 
     @app.get("/pdf")
     async def get_pdf(
-            session_id: str, user_email: Optional[str] = None
+        session_id: str,
+        auth_user: AuthenticatedUser = Depends(get_authenticated_user),
     ) -> StreamingResponse:
-        """
-        Generate PDF for a given session ID
-
-        Args:
-            session_id: Unique session identifier
-            user_email: Optional user email address
-
-        Returns:
-            StreamingResponse with PDF content
-        """
+        """Generate PDF for a given session ID."""
         logger.info(f"Generating PDF for session {session_id}")
-        report = await get_report_for_session(session_id, user_email)
+        report = await get_report_for_session(session_id, auth_user.email)
 
         if not report:
             raise HTTPException(
@@ -274,16 +328,10 @@ def create_app(agent: AgentProtocol) -> FastAPI:
 
     @app.get("/health", response_model=HealthResponse)
     async def health() -> HealthResponse:
-        """
-        Check service health including database connectivity.
-
-        Returns:
-            HealthResponse with overall status and component-level health details.
-        """
+        """Check service health including database connectivity."""
         db_health = ComponentHealth(status="healthy")
 
         try:
-            # Attempt to list sessions with minimal data to verify DB connectivity
             await session_service.list_sessions(
                 app_name=APP_NAME, user_id="health-check"
             )
@@ -291,7 +339,6 @@ def create_app(agent: AgentProtocol) -> FastAPI:
             logger.error(f"Database health check failed: {e}")
             db_health = ComponentHealth(status="unhealthy", message=str(e))
 
-        # Overall status is unhealthy if any component is unhealthy
         overall_status = "healthy" if db_health.status == "healthy" else "unhealthy"
 
         return HealthResponse(status=overall_status, database=db_health)

@@ -2,7 +2,13 @@ import uuid
 
 import streamlit as st
 
-from frontend import fetch_recent_session, require_login, render_sidebar, render_main_content
+from frontend import (
+    fetch_billing_state,
+    fetch_recent_session,
+    render_main_content,
+    render_sidebar,
+    require_login,
+)
 
 st.set_page_config(
     page_title="AI Tool Assessment Agent",
@@ -24,7 +30,10 @@ if "initialized" not in st.session_state:
         st.session_state.ai_tool_name = None
         st.session_state.tool_report_resp = None
 
+    st.session_state.billing_state = fetch_billing_state()
     st.session_state.pdf_data = None
+    st.session_state.checkout_url = None
+    st.session_state.portal_url = None
     st.session_state.initialized = True
 
 # Safety net for missing variables
@@ -36,6 +45,12 @@ if "ai_tool_name" not in st.session_state:
     st.session_state.ai_tool_name = None
 if "pdf_data" not in st.session_state:
     st.session_state.pdf_data = None
+if "billing_state" not in st.session_state:
+    st.session_state.billing_state = fetch_billing_state()
+if "checkout_url" not in st.session_state:
+    st.session_state.checkout_url = None
+if "portal_url" not in st.session_state:
+    st.session_state.portal_url = None
 
 render_sidebar()
 render_main_content()

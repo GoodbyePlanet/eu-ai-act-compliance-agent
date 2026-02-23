@@ -1,8 +1,9 @@
-.PHONY: all venv install activate web run-api run-ui clean help
+.PHONY: all venv install reinstall install-test activate web run-api run-ui clean help test-all
 
 VENV_DIR = .venv
 PYTHON = python3
 VENV_BIN = $(VENV_DIR)/bin
+UV = uv
 # Marker file to track if package is installed
 INSTALL_MARKER = $(VENV_DIR)/.installed
 
@@ -27,7 +28,7 @@ venv:
 install: venv
 	@if [ ! -f $(INSTALL_MARKER) ]; then \
 		echo "--- Installing package in development mode ---"; \
-		$(VENV_BIN)/pip install -e .; \
+		$(UV) sync; \
 		touch $(INSTALL_MARKER); \
 	else \
 		echo "Package already installed. Run 'make reinstall' to force reinstall."; \
@@ -36,8 +37,13 @@ install: venv
 ## reinstall: Force reinstalls the package in development mode.
 reinstall: venv
 	@echo "--- Reinstalling package in development mode ---"
-	$(VENV_BIN)/pip install -e .
+	$(UV) sync --reinstall
 	@touch $(INSTALL_MARKER)
+
+## install-test: Installs test dependencies.
+install-test: install
+	@echo "--- Installing test dependencies ---"
+	$(UV) sync --extra test
 
 ## web: Starts the ADK web server on port 8000.
 web: install
@@ -66,6 +72,6 @@ clean:
 	rm -rf $(VENV_DIR)
 
 ## test: Run all tests
-test-all:
+test-all: install-test
 	@echo "--- Running all tests ---"
-	.venv/bin/pytest tests/ -v
+	$(UV) run pytest tests/ -v

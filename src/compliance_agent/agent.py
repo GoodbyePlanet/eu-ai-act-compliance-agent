@@ -1,8 +1,8 @@
 import logging
 import os
+import time
 import uuid
 
-import time
 from dotenv import load_dotenv
 from google.adk.agents.llm_agent import Agent
 from google.adk.events import Event, EventActions
@@ -17,6 +17,7 @@ from compliance_agent.config import (
     APP_NAME,
     MAX_SEARCHES,
 )
+from compliance_agent.billing import BillingService, InsufficientCreditsError
 from compliance_agent.guardrails import (
     validate_input_guardrail,
     output_validation_guardrail,
@@ -46,6 +47,7 @@ if not db_url:
 
 session_service = DatabaseSessionService(db_url=db_url)
 runner = Runner(agent=root_agent, app_name=APP_NAME, session_service=session_service)
+billing_service = BillingService()
 
 
 async def execute(request):
@@ -68,9 +70,19 @@ async def execute(request):
     else:
         user_email = f"Guest_{uuid.uuid4()}"  # TODO: Later on we want to allow guest users to use the app
 
-    current_session = (
-        request.session_id if request.session_id else f"session_{uuid.uuid4()}"
-    )
+    current_session = request.session_id if request.session_id else f"session_{uuid.uuid4()}"
+    request_id = request.request_id if request.request_id else str(uuid.uuid4())
+
+    if billing_service.is_enabled():
+        if not request.user_sub:
+            raise InsufficientCreditsError("Missing authenticated billing user")
+        await billing_service.consume_credit_for_request(
+            user_id=request.user_sub,
+            request_id=request_id,
+            session_id=current_session,
+            ai_tool=request.ai_tool,
+        )
+
     existing_session = await session_service.get_session(
         app_name=APP_NAME, user_id=user_email, session_id=current_session
     )
