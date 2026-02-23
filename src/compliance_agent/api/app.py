@@ -28,7 +28,6 @@ from compliance_agent.billing import (
     AuthenticatedUser,
     BillingService,
     InsufficientCreditsError,
-    NewToolInFollowUpError,
     get_authenticated_user,
 )
 from compliance_agent.billing.db import init_billing_schema
@@ -105,17 +104,14 @@ def create_app(agent: AgentProtocol) -> FastAPI:
             response = await agent.execute(payload)
         except InsufficientCreditsError as exc:
             raise HTTPException(status_code=402, detail=str(exc)) from exc
-        except NewToolInFollowUpError as exc:
-            raise HTTPException(status_code=409, detail=str(exc)) from exc
 
         if response is None:
             raise HTTPException(status_code=500, detail="Failed to execute assessment")
 
         if billing_service.is_enabled() and payload.user_sub:
             credit_state = await billing_service.get_credit_state(user_id=payload.user_sub)
-            response["credits_remaining"] = credit_state.credits_balance
+            response["request_units_remaining"] = credit_state.request_units_balance
             response["billing_status"] = "ok"
-            response["session_tool_locked"] = True
 
         return response
 

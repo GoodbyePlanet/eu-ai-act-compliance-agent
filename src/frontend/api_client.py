@@ -27,11 +27,12 @@ class SessionListItemDict(TypedDict):
 class BillingStateDict(TypedDict):
     """Type for billing state returned by API."""
 
-    credits_balance: int
-    free_credits_remaining: int
-    paid_credits_remaining: int
-    can_start_new_session: bool
+    request_units_balance: int
+    free_request_units_remaining: int
+    paid_request_units_remaining: int
+    can_run_request: bool
     stripe_customer_exists: bool
+    request_unit_price_eur: float
 
 
 API_URL = os.getenv("API_URL", "http://localhost:8000")
@@ -146,7 +147,7 @@ def fetch_billing_state() -> Optional[BillingStateDict]:
 
 
 def create_checkout_session(pack_code: str) -> Optional[Dict[str, Any]]:
-    """Create a checkout session for a selected credit pack."""
+    """Create a checkout session for a selected request-unit pack."""
     response = _request(
         "POST",
         f"{API_URL}/billing/checkout-session",

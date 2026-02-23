@@ -52,7 +52,7 @@ class StripeService:
             raise ValueError(f"Price ID not configured for pack code: {pack_code}")
         return price_config.strip()
 
-    def _line_item_for_pack(self, pack_code: str, credits: int) -> Dict[str, Any]:
+    def _line_item_for_pack(self, pack_code: str, request_units: int) -> Dict[str, Any]:
         """Build a valid Stripe line item from configured pack pricing."""
         price_config = self._pack_price_config(pack_code=pack_code)
 
@@ -67,7 +67,7 @@ class StripeService:
                 "price_data": {
                     "currency": self._currency,
                     "unit_amount": amount_minor,
-                    "product_data": {"name": f"Compliance Credits ({credits})"},
+                    "product_data": {"name": f"Compliance Credits ({request_units} requests)"},
                 },
                 "quantity": 1,
             }
@@ -84,7 +84,7 @@ class StripeService:
                 "price_data": {
                     "currency": self._currency,
                     "unit_amount": amount_minor,
-                    "product_data": {"name": f"Compliance Credits ({credits})"},
+                    "product_data": {"name": f"Compliance Credits ({request_units} requests)"},
                 },
                 "quantity": 1,
             }
@@ -117,9 +117,9 @@ class StripeService:
         logger.info("Creating Stripe checkout session for user_id=%s pack_code=%s", user_id, pack_code)
         self._require_stripe()
 
-        credits = self._billing_service.pack_to_credits(pack_code)
+        request_units = self._billing_service.pack_to_request_units(pack_code)
         customer_id = await self.get_or_create_customer(user_id=user_id, email=email)
-        line_item = self._line_item_for_pack(pack_code=pack_code, credits=credits)
+        line_item = self._line_item_for_pack(pack_code=pack_code, request_units=request_units)
 
         checkout = stripe.checkout.Session.create(
             mode="payment",
@@ -134,7 +134,7 @@ class StripeService:
             metadata={
                 "user_id": user_id,
                 "pack_code": pack_code,
-                "credits": str(credits),
+                "request_units": str(request_units),
                 "email": email,
             },
         )
@@ -145,7 +145,7 @@ class StripeService:
                     StripeCheckoutSession(
                         user_id=user_id,
                         pack_code=pack_code,
-                        credits_to_grant=credits,
+                        request_units_to_grant=request_units,
                         amount_minor=int(checkout["amount_total"] or 0),
                         currency=(checkout.get("currency") or self._currency),
                         stripe_checkout_session_id=checkout["id"],
@@ -189,7 +189,7 @@ class StripeService:
         data_obj = event.get("data", {}).get("object", {})
         metadata = data_obj.get("metadata", {}) or {}
         user_id = metadata.get("user_id")
-        credits_raw = metadata.get("credits", "0")
+        request_units_raw = metadata.get("request_units", "0")
         checkout_session_id = data_obj.get("id", "")
 
         if not user_id:
@@ -201,10 +201,10 @@ class StripeService:
         if not user_id:
             raise ValueError("Could not resolve user_id from Stripe webhook metadata")
 
-        credits = int(credits_raw)
+        request_units = int(request_units_raw)
         await self._billing_service.apply_purchase_credits(
             user_id=user_id,
-            credits=credits,
+            request_units=request_units,
             stripe_event_id=event_id,
             stripe_checkout_session_id=checkout_session_id,
             metadata={"event_type": event_type},
@@ -227,5 +227,10 @@ class StripeService:
                 if checkout_record is not None:
                     checkout_record.status = "completed"
 
-        logger.info("Stripe checkout processed: event_id=%s user_id=%s credits=%s", event_id, user_id, credits)
+        logger.info(
+            "Stripe checkout processed: event_id=%s user_id=%s request_units=%s",
+            event_id,
+            user_id,
+            request_units,
+        )
         return True, "processed"

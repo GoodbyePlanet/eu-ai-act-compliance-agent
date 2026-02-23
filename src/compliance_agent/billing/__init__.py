@@ -4,7 +4,6 @@ from compliance_agent.billing.auth import AuthenticatedUser, get_authenticated_u
 from compliance_agent.billing.service import (
     BillingService,
     InsufficientCreditsError,
-    NewToolInFollowUpError,
 )
 
 __all__ = [
@@ -12,5 +11,4 @@ __all__ = [
     "get_authenticated_user",
     "BillingService",
     "InsufficientCreditsError",
-    "NewToolInFollowUpError",
 ]

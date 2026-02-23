@@ -1,3 +1,5 @@
+import uuid
+
 import streamlit as st
 
 from frontend import fetch_billing_state, generate_pdf, run_assessment
@@ -8,7 +10,7 @@ def render_main_content():
     st.title("AI Tool Assessment Agent")
 
     billing_state = st.session_state.get("billing_state") or {}
-    credits_balance = int(billing_state.get("credits_balance", 0))
+    request_units_balance = int(billing_state.get("request_units_balance", 0))
     is_active_session = st.session_state.ai_tool_name is not None
 
     if is_active_session:
@@ -28,11 +30,11 @@ def render_main_content():
         key=f"input_{st.session_state.session_id}",
     )
 
-    can_submit = is_active_session or credits_balance > 0
+    can_submit = request_units_balance > 0
     if not can_submit:
-        st.warning("No credits left. Buy credits to start a new assessment.")
+        st.warning("No requests left. Buy credits to continue.")
 
-    if st.button("Submit Assessment", disabled=not can_submit):
+    if st.button("Submit", disabled=not can_submit):
         if not user_input:
             st.warning("Please fill in the name of the AI tool to assess.")
         else:
@@ -40,6 +42,7 @@ def render_main_content():
                 payload = {
                     "ai_tool": user_input,
                     "session_id": st.session_state.session_id,
+                    "request_id": str(uuid.uuid4()),
                     "user_email": st.user.email,
                 }
                 response = run_assessment(payload)

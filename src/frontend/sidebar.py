@@ -45,14 +45,14 @@ def render_sidebar():
         )
 
         billing_state = st.session_state.get("billing_state") or {}
-        credits_balance = int(billing_state.get("credits_balance", 0))
+        request_units_balance = int(billing_state.get("request_units_balance", 0))
 
-        st.caption(f"Credits remaining: {credits_balance}")
-        if st.button("↻ Refresh Credits", use_container_width=True):
+        st.caption(f"Requests remaining: {request_units_balance}")
+        if st.button("↻ Refresh Balance", use_container_width=True):
             _refresh_billing_state()
             st.rerun()
 
-        if st.button("➕ New Assessment", use_container_width=True, disabled=credits_balance <= 0):
+        if st.button("➕ New Assessment", use_container_width=True):
             st.session_state.session_id = str(uuid.uuid4())
             st.session_state.ai_tool_name = None
             st.session_state.tool_report_resp = None
@@ -62,15 +62,16 @@ def render_sidebar():
         st.write("### Buy Credits")
         buy_cols = st.columns(3)
         for col, pack_code, label in [
-            (buy_cols[0], "CREDITS_5", "5"),
-            (buy_cols[1], "CREDITS_20", "20"),
-            (buy_cols[2], "CREDITS_50", "50"),
+            (buy_cols[0], "CREDITS_5", "5 cr"),
+            (buy_cols[1], "CREDITS_20", "20 cr"),
+            (buy_cols[2], "CREDITS_50", "50 cr"),
         ]:
             with col:
                 if st.button(label, key=f"buy_{pack_code}", use_container_width=True):
                     result = create_checkout_session(pack_code)
                     if result and result.get("checkout_url"):
                         st.session_state.checkout_url = result["checkout_url"]
+        st.caption("1 credit = 5 requests.")
 
         if st.session_state.get("checkout_url"):
             st.link_button("Open Checkout", url=st.session_state["checkout_url"], use_container_width=True)

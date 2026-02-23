@@ -1,4 +1,4 @@
-"""SQLAlchemy models for billing and credits."""
+"""SQLAlchemy models for billing and request-unit accounting."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import enum
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import JSON, DateTime, Enum, ForeignKey, Index, Integer, String, Text, UniqueConstraint
+from sqlalchemy import JSON, DateTime, Enum, ForeignKey, Index, Integer, String, UniqueConstraint
 from sqlalchemy.ext.mutable import MutableDict
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -25,16 +25,9 @@ class LedgerReason(str, enum.Enum):
 
     FREE_GRANT = "FREE_GRANT"
     PURCHASE = "PURCHASE"
-    SESSION_DEBIT = "SESSION_DEBIT"
+    REQUEST_DEBIT = "REQUEST_DEBIT"
     ADJUSTMENT = "ADJUSTMENT"
     REFUND = "REFUND"
-
-
-class BillingSessionStatus(str, enum.Enum):
-    """Status for billing-tracked assessment sessions."""
-
-    ACTIVE = "ACTIVE"
-    CLOSED = "CLOSED"
 
 
 class BillingUser(Base):
@@ -53,7 +46,7 @@ class BillingUser(Base):
 
 
 class CreditAccount(Base):
-    """Current credit balance for a user."""
+    """Current request-unit balance for a user."""
 
     __tablename__ = "credit_accounts"
 
@@ -65,7 +58,7 @@ class CreditAccount(Base):
 
 
 class CreditLedgerEntry(Base):
-    """Immutable ledger for all credit mutations."""
+    """Immutable ledger for all request-unit mutations."""
 
     __tablename__ = "credit_ledger"
 
@@ -86,21 +79,6 @@ class CreditLedgerEntry(Base):
     )
 
 
-class AssessmentBillingSession(Base):
-    """Maps one assessment session to one consumed credit and canonical tool."""
-
-    __tablename__ = "assessment_billing_sessions"
-
-    session_id: Mapped[str] = mapped_column(String(255), primary_key=True)
-    user_id: Mapped[str] = mapped_column(String(64), ForeignKey("billing_users.id", ondelete="CASCADE"), index=True)
-    canonical_tool_name: Mapped[str] = mapped_column(Text)
-    canonical_tool_fingerprint: Mapped[str] = mapped_column(String(255), index=True)
-    credit_ledger_debit_id: Mapped[str] = mapped_column(String(64), ForeignKey("credit_ledger.id", ondelete="RESTRICT"))
-    status: Mapped[BillingSessionStatus] = mapped_column(Enum(BillingSessionStatus), default=BillingSessionStatus.ACTIVE)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, onupdate=_utcnow)
-
-
 class StripeCustomer(Base):
     """Stripe customer reference by internal user."""
 
@@ -111,14 +89,14 @@ class StripeCustomer(Base):
 
 
 class StripeCheckoutSession(Base):
-    """Tracks checkout sessions created for credit purchases."""
+    """Tracks checkout sessions created for request-unit purchases."""
 
     __tablename__ = "stripe_checkout_sessions"
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id: Mapped[str] = mapped_column(String(64), ForeignKey("billing_users.id", ondelete="CASCADE"), index=True)
     pack_code: Mapped[str] = mapped_column(String(64), index=True)
-    credits_to_grant: Mapped[int] = mapped_column(Integer, nullable=False)
+    request_units_to_grant: Mapped[int] = mapped_column(Integer, nullable=False)
     amount_minor: Mapped[int] = mapped_column(Integer, nullable=False)
     currency: Mapped[str] = mapped_column(String(8), nullable=False)
     stripe_checkout_session_id: Mapped[str] = mapped_column(String(255), unique=True, index=True)

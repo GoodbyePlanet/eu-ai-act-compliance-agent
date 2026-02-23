@@ -25,6 +25,12 @@ dependencies = [
     "uvicorn>=0.38.0",
 ]
 
+[project.optional-dependencies]
+test = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+]
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
