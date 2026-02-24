@@ -5,7 +5,7 @@ import time
 from datetime import datetime, timezone
 from typing import List, Optional
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 from starlette.responses import StreamingResponse
 
@@ -15,11 +15,8 @@ from compliance_agent.api.models import (
     AssessRequest,
     AssessResponse,
     BillingStateResponse,
-    CheckoutSessionRequest,
-    CheckoutSessionResponse,
     ComponentHealth,
     HealthResponse,
-    PortalSessionResponse,
     SessionInfo,
     SessionListItem,
     SessionListResponse,
@@ -31,7 +28,6 @@ from compliance_agent.billing import (
     get_authenticated_user,
 )
 from compliance_agent.billing.db import init_billing_schema
-from compliance_agent.billing.stripe_service import StripeService
 from compliance_agent.config import APP_NAME
 from compliance_agent.services import PDFService, get_report_for_session
 
@@ -54,7 +50,6 @@ def create_app(agent: AgentProtocol) -> FastAPI:
     )
 
     billing_service = BillingService()
-    stripe_service = StripeService(billing_service=billing_service)
 
     @app.on_event("startup")
     async def on_startup() -> None:
@@ -109,8 +104,8 @@ def create_app(agent: AgentProtocol) -> FastAPI:
             raise HTTPException(status_code=500, detail="Failed to execute assessment")
 
         if billing_service.is_enabled() and payload.user_sub:
-            credit_state = await billing_service.get_credit_state(user_id=payload.user_sub)
-            response["request_units_remaining"] = credit_state.request_units_balance
+            credit_state = await billing_service.get_daily_credit_state(user_id=payload.user_sub)
+            response["credits_left_today"] = credit_state.credits_left_today
             response["billing_status"] = "ok"
 
         return response
@@ -119,70 +114,13 @@ def create_app(agent: AgentProtocol) -> FastAPI:
     async def billing_me(
         auth_user: AuthenticatedUser = Depends(get_authenticated_user),
     ) -> BillingStateResponse:
-        """Return the current authenticated user's billing state."""
+        """Return the current authenticated user's daily quota state."""
         user_ref = await billing_service.ensure_user(
             google_sub=auth_user.subject,
             email=auth_user.email,
         )
-        state = await billing_service.get_credit_state(user_id=user_ref.id)
+        state = await billing_service.get_daily_credit_state(user_id=user_ref.id)
         return BillingStateResponse(**state.__dict__)
-
-    @app.post("/billing/checkout-session", response_model=CheckoutSessionResponse)
-    async def create_checkout_session(
-        payload: CheckoutSessionRequest,
-        auth_user: AuthenticatedUser = Depends(get_authenticated_user),
-    ) -> CheckoutSessionResponse:
-        """Create a Stripe checkout session for a credit pack."""
-        logger.info(f"Creating checkout session for user {auth_user.email}, pack {payload.pack_code}")
-        user_ref = await billing_service.ensure_user(
-            google_sub=auth_user.subject,
-            email=auth_user.email,
-        )
-        checkout_session_response = await stripe_service.create_checkout_session(
-            user_id=user_ref.id,
-            email=user_ref.email,
-            pack_code=payload.pack_code,
-        )
-        return CheckoutSessionResponse(**checkout_session_response)
-
-    @app.post("/billing/portal-session", response_model=PortalSessionResponse)
-    async def create_portal_session(
-        auth_user: AuthenticatedUser = Depends(get_authenticated_user),
-    ) -> PortalSessionResponse:
-        """Create a Stripe billing portal session."""
-        logger.info(f"Creating portal session for user {auth_user.email}")
-        user_ref = await billing_service.ensure_user(
-            google_sub=auth_user.subject,
-            email=auth_user.email,
-        )
-        result = await stripe_service.create_portal_session(user_id=user_ref.id, email=user_ref.email)
-        return PortalSessionResponse(**result)
-
-    @app.post("/billing/webhooks/stripe")
-    async def stripe_webhook(
-        request: Request,
-        stripe_signature: Optional[str] = Header(default=None, alias="Stripe-Signature"),
-    ) -> dict:
-        """Handle Stripe webhook events with signature verification and idempotency."""
-        logger.info("Received Stripe webhook event")
-        if not stripe_signature:
-            raise HTTPException(status_code=400, detail="Missing Stripe-Signature header")
-
-        body = await request.body()
-        try:
-            event = stripe_service.construct_event(payload=body, stripe_signature=stripe_signature)
-        except Exception as exc:
-            raise HTTPException(status_code=400, detail=f"Invalid webhook payload: {exc}") from exc
-
-        event_type = event.get("type", "")
-        if event_type == "checkout.session.completed":
-            processed, status_text = await stripe_service.process_checkout_completed(event=event, raw_payload=body)
-            logger.info(f"Processing Stripe checkout session completed event {status_text}")
-
-            # TODO: What do we do with this response?
-            return {"status": status_text, "processed": processed}
-
-        return {"status": "ignored", "event_type": event_type}
 
     @app.get("/sessions/recent", response_model=Optional[SessionInfo])
     async def get_recent_session(

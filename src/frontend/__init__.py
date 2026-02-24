@@ -1,6 +1,4 @@
 from .api_client import (
-    create_checkout_session,
-    create_portal_session,
     fetch_billing_state,
     fetch_recent_session,
     fetch_session_by_id_and_email,
@@ -14,8 +12,6 @@ from .main_content import render_main_content
 
 __all__ = [
     "run_assessment",
-    "create_checkout_session",
-    "create_portal_session",
     "fetch_billing_state",
     "generate_pdf",
     "fetch_recent_session",

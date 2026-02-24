@@ -5,8 +5,6 @@ import streamlit as st
 
 from frontend.api_client import (
     API_URL,
-    create_checkout_session,
-    create_portal_session,
     fetch_billing_state,
     fetch_session_by_id_and_email,
     fetch_session_history,
@@ -44,10 +42,16 @@ def render_sidebar():
             unsafe_allow_html=True,
         )
 
-        billing_state = st.session_state.get("billing_state") or {}
-        request_units_balance = int(billing_state.get("request_units_balance", 0))
-
-        st.caption(f"Requests remaining: {request_units_balance}")
+        billing_state = st.session_state.get("billing_state")
+        if billing_state:
+            credits_left_today = int(billing_state.get("credits_left_today", 0))
+            daily_limit = int(billing_state.get("daily_limit", 20))
+            resets_at_utc = billing_state.get("resets_at_utc", "")
+            st.caption(f"Credits left today: {credits_left_today}/{daily_limit}")
+            if resets_at_utc:
+                st.caption(f"Resets at: {resets_at_utc}")
+        else:
+            st.caption("Credits left today: unavailable")
         if st.button("↻ Refresh Balance", use_container_width=True):
             _refresh_billing_state()
             st.rerun()
@@ -58,31 +62,6 @@ def render_sidebar():
             st.session_state.tool_report_resp = None
             st.session_state.pdf_data = None
             st.rerun()
-
-        st.write("### Buy Credits")
-        buy_cols = st.columns(3)
-        for col, pack_code, label in [
-            (buy_cols[0], "CREDITS_5", "5 cr"),
-            (buy_cols[1], "CREDITS_20", "20 cr"),
-            (buy_cols[2], "CREDITS_50", "50 cr"),
-        ]:
-            with col:
-                if st.button(label, key=f"buy_{pack_code}", use_container_width=True):
-                    result = create_checkout_session(pack_code)
-                    if result and result.get("checkout_url"):
-                        st.session_state.checkout_url = result["checkout_url"]
-        st.caption("1 credit = 5 requests.")
-
-        if st.session_state.get("checkout_url"):
-            st.link_button("Open Checkout", url=st.session_state["checkout_url"], use_container_width=True)
-
-        if st.button("Billing & Invoices", use_container_width=True):
-            portal = create_portal_session()
-            if portal and portal.get("portal_url"):
-                st.session_state.portal_url = portal["portal_url"]
-
-        if st.session_state.get("portal_url"):
-            st.link_button("Open Billing Portal", url=st.session_state["portal_url"], use_container_width=True)
 
         st.markdown(f"[Learn about EU AI ACT]({API_URL}/about-eu-ai-act)")
 

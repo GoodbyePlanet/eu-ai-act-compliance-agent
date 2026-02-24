@@ -9,8 +9,8 @@ def render_main_content():
     st.markdown(f"Welcome, **{st.user.name}**")
     st.title("AI Tool Assessment Agent")
 
-    billing_state = st.session_state.get("billing_state") or {}
-    request_units_balance = int(billing_state.get("request_units_balance", 0))
+    billing_state = st.session_state.get("billing_state")
+    credits_left_today = None if not billing_state else int(billing_state.get("credits_left_today", 0))
     is_active_session = st.session_state.ai_tool_name is not None
 
     if is_active_session:
@@ -30,9 +30,11 @@ def render_main_content():
         key=f"input_{st.session_state.session_id}",
     )
 
-    can_submit = request_units_balance > 0
-    if not can_submit:
-        st.warning("No requests left. Buy credits to continue.")
+    can_submit = credits_left_today is not None and credits_left_today > 0
+    if credits_left_today == 0:
+        st.warning("Daily limit reached (20/20). Try again after the UTC reset.")
+    elif credits_left_today is None:
+        st.warning("Could not load daily credits. Please refresh balance and try again.")
 
     if st.button("Submit", disabled=not can_submit):
         if not user_input:

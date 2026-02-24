@@ -32,8 +32,6 @@ if "initialized" not in st.session_state:
 
     st.session_state.billing_state = fetch_billing_state()
     st.session_state.pdf_data = None
-    st.session_state.checkout_url = None
-    st.session_state.portal_url = None
     st.session_state.initialized = True
 
 # Safety net for missing variables
@@ -47,10 +45,6 @@ if "pdf_data" not in st.session_state:
     st.session_state.pdf_data = None
 if "billing_state" not in st.session_state:
     st.session_state.billing_state = fetch_billing_state()
-if "checkout_url" not in st.session_state:
-    st.session_state.checkout_url = None
-if "portal_url" not in st.session_state:
-    st.session_state.portal_url = None
 
 render_sidebar()
 render_main_content()
