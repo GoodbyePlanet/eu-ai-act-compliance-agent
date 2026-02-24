@@ -76,7 +76,7 @@ async def execute(request):
     if billing_service.is_enabled():
         if not request.user_sub:
             raise InsufficientCreditsError("Missing authenticated billing user")
-        await billing_service.consume_credit_for_request(
+        await billing_service.consume_daily_credit_for_request(
             user_id=request.user_sub,
             request_id=request_id,
             session_id=current_session,

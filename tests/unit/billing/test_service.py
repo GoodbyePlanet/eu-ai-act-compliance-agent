@@ -1,12 +1,13 @@
 import asyncio
 from collections.abc import Generator
+from datetime import datetime, timedelta, timezone
 
 import pytest
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
-from compliance_agent.billing.models import Base, CreditLedgerEntry, LedgerReason
+from compliance_agent.billing.models import Base, BillingUser, CreditLedgerEntry, LedgerReason
 from compliance_agent.billing.service import BillingService, InsufficientCreditsError
 
 
@@ -34,33 +35,20 @@ def billing_service() -> Generator[BillingService, None, None]:
         asyncio.run(engine.dispose())
 
 
-def test_ensure_user_grants_free_request_units_only_once(billing_service: BillingService) -> None:
-    """First user bootstrap grants 5 request units and does not repeat."""
+def test_ensure_user_creates_identity_only_once(billing_service: BillingService) -> None:
+    """First user bootstrap should create user and subsequent calls should reuse it."""
 
     async def _run() -> None:
         created = await billing_service.ensure_user("sub-1", "user@example.com")
-        await billing_service.ensure_user("sub-1", "user-updated@example.com")
+        second = await billing_service.ensure_user("sub-1", "user-updated@example.com")
 
-        state = await billing_service.get_credit_state(created.id)
-        assert state.request_units_balance == 5
-        assert state.free_request_units_remaining == 5
-        assert state.paid_request_units_remaining == 0
-        assert state.can_run_request is True
-        assert state.request_unit_price_eur == 0.2
-
-        async with billing_service._session_factory() as session:  # type: ignore[attr-defined]
-            stmt = select(CreditLedgerEntry).where(
-                CreditLedgerEntry.user_id == created.id,
-                CreditLedgerEntry.reason == LedgerReason.FREE_GRANT,
-            )
-            rows = (await session.execute(stmt)).scalars().all()
-            assert len(rows) == 1
-            assert rows[0].delta == 5
+        assert created.id == second.id
+        assert second.email == "user-updated@example.com"
 
     asyncio.run(_run())
 
 
-def test_consume_credit_for_request_debits_per_request_and_is_idempotent(
+def test_consume_daily_credit_debits_per_request_and_is_idempotent(
     billing_service: BillingService,
 ) -> None:
     """A request debit consumes one unit and duplicate request_id does not double charge."""
@@ -68,21 +56,21 @@ def test_consume_credit_for_request_debits_per_request_and_is_idempotent(
     async def _run() -> None:
         user = await billing_service.ensure_user("sub-2", "user2@example.com")
 
-        balance_after_first = await billing_service.consume_credit_for_request(
+        left_after_first = await billing_service.consume_daily_credit_for_request(
             user_id=user.id,
             request_id="req-1",
             session_id="session-1",
             ai_tool="Notion AI",
         )
-        balance_after_duplicate = await billing_service.consume_credit_for_request(
+        left_after_duplicate = await billing_service.consume_daily_credit_for_request(
             user_id=user.id,
             request_id="req-1",
             session_id="session-1",
             ai_tool="Notion AI",
         )
 
-        assert balance_after_first == 4
-        assert balance_after_duplicate == 4
+        assert left_after_first == 19
+        assert left_after_duplicate == 19
 
         async with billing_service._session_factory() as session:  # type: ignore[attr-defined]
             stmt = select(CreditLedgerEntry).where(
@@ -98,14 +86,14 @@ def test_consume_credit_for_request_debits_per_request_and_is_idempotent(
     asyncio.run(_run())
 
 
-def test_consume_credit_for_request_raises_when_balance_is_empty(billing_service: BillingService) -> None:
-    """User cannot submit more requests than available free request units."""
+def test_consume_daily_credit_raises_when_day_limit_is_reached(billing_service: BillingService) -> None:
+    """User cannot submit more than 20 requests in the same UTC day."""
 
     async def _run() -> None:
         user = await billing_service.ensure_user("sub-3", "user3@example.com")
 
-        for idx in range(5):
-            await billing_service.consume_credit_for_request(
+        for idx in range(20):
+            await billing_service.consume_daily_credit_for_request(
                 user_id=user.id,
                 request_id=f"req-{idx}",
                 session_id=f"session-{idx}",
@@ -113,74 +101,47 @@ def test_consume_credit_for_request_raises_when_balance_is_empty(billing_service
             )
 
         with pytest.raises(InsufficientCreditsError):
-            await billing_service.consume_credit_for_request(
+            await billing_service.consume_daily_credit_for_request(
                 user_id=user.id,
                 request_id="req-over-limit",
                 session_id="session-over-limit",
                 ai_tool="ChatGPT",
             )
 
-        state = await billing_service.get_credit_state(user.id)
-        assert state.request_units_balance == 0
+        state = await billing_service.get_daily_credit_state(user.id)
+        assert state.credits_left_today == 0
         assert state.can_run_request is False
+        assert state.used_today == 20
 
     asyncio.run(_run())
 
 
-def test_apply_purchase_credits_is_idempotent_and_tracks_paid_balance(
-    billing_service: BillingService,
-) -> None:
-    """Applying the same Stripe event twice must only grant once."""
+def test_daily_state_ignores_previous_day_entries(billing_service: BillingService) -> None:
+    """Credits consumed before current UTC day must not affect today's quota."""
 
     async def _run() -> None:
         user = await billing_service.ensure_user("sub-4", "user4@example.com")
 
-        for idx in range(3):
-            await billing_service.consume_credit_for_request(
-                user_id=user.id,
-                request_id=f"req-spend-{idx}",
-                session_id="session-paid",
-                ai_tool="Claude",
-            )
-
-        balance_after_first = await billing_service.apply_purchase_credits(
-            user_id=user.id,
-            request_units=10,
-            stripe_event_id="evt_1",
-            stripe_checkout_session_id="cs_1",
-            metadata={"source": "test"},
-        )
-        balance_after_duplicate = await billing_service.apply_purchase_credits(
-            user_id=user.id,
-            request_units=10,
-            stripe_event_id="evt_1",
-            stripe_checkout_session_id="cs_1",
-            metadata={"source": "test"},
-        )
-
-        assert balance_after_first == 12
-        assert balance_after_duplicate == 12
-
-        state = await billing_service.get_credit_state(user.id)
-        assert state.request_units_balance == 12
-        assert state.free_request_units_remaining == 2
-        assert state.paid_request_units_remaining == 10
-
         async with billing_service._session_factory() as session:  # type: ignore[attr-defined]
-            stmt = select(CreditLedgerEntry).where(
-                CreditLedgerEntry.user_id == user.id,
-                CreditLedgerEntry.reason == LedgerReason.PURCHASE,
+            db_user = await session.get(BillingUser, user.id)
+            assert db_user is not None
+            yesterday = datetime.now(timezone.utc) - timedelta(days=1)
+            session.add(
+                CreditLedgerEntry(
+                    user_id=db_user.id,
+                    delta=-1,
+                    reason=LedgerReason.REQUEST_DEBIT,
+                    session_id="yesterday",
+                    idempotency_key="request-debit:yesterday",
+                    balance_after=0,
+                    metadata_json={"ai_tool": "Old Tool"},
+                    created_at=yesterday,
+                )
             )
-            rows = (await session.execute(stmt)).scalars().all()
-            assert len(rows) == 1
-            assert rows[0].delta == 10
-            assert rows[0].idempotency_key == "stripe:evt_1"
+            await session.commit()
+
+        state = await billing_service.get_daily_credit_state(user.id)
+        assert state.used_today == 0
+        assert state.credits_left_today == 20
 
     asyncio.run(_run())
-
-
-def test_pack_to_request_units_returns_expected_values(billing_service: BillingService) -> None:
-    """Supported Stripe packs should map to request-unit quantities."""
-    assert billing_service.pack_to_request_units("CREDITS_5") == 25
-    assert billing_service.pack_to_request_units("CREDITS_20") == 100
-    assert billing_service.pack_to_request_units("CREDITS_50") == 250

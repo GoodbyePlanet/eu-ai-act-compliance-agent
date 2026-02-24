@@ -18,7 +18,7 @@ class AssessResponse(BaseModel):
 
     summary: str
     session_id: str
-    request_units_remaining: Optional[int] = None
+    credits_left_today: Optional[int] = None
     billing_status: Optional[str] = None
 
 
@@ -59,33 +59,13 @@ class HealthResponse(BaseModel):
 
 
 class BillingStateResponse(BaseModel):
-    """Model for user billing state response."""
+    """Model for user daily quota state response."""
 
-    request_units_balance: int
-    free_request_units_remaining: int
-    paid_request_units_remaining: int
+    daily_limit: int
+    used_today: int
+    credits_left_today: int
     can_run_request: bool
-    stripe_customer_exists: bool
-    request_unit_price_eur: float
-
-
-class CheckoutSessionRequest(BaseModel):
-    """Model for starting a Stripe checkout session."""
-
-    pack_code: str
-
-
-class CheckoutSessionResponse(BaseModel):
-    """Model returned for Stripe checkout redirection."""
-
-    checkout_url: str
-    checkout_session_id: str
-
-
-class PortalSessionResponse(BaseModel):
-    """Model returned for Stripe billing portal redirection."""
-
-    portal_url: str
+    resets_at_utc: str
 
 
 @runtime_checkable

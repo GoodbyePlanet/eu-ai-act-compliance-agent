@@ -25,14 +25,13 @@ class SessionListItemDict(TypedDict):
 
 
 class BillingStateDict(TypedDict):
-    """Type for billing state returned by API."""
+    """Type for the daily quota state returned by API."""
 
-    request_units_balance: int
-    free_request_units_remaining: int
-    paid_request_units_remaining: int
+    daily_limit: int
+    used_today: int
+    credits_left_today: int
     can_run_request: bool
-    stripe_customer_exists: bool
-    request_unit_price_eur: float
+    resets_at_utc: str
 
 
 API_URL = os.getenv("API_URL", "http://localhost:8000")
@@ -49,8 +48,6 @@ def _handle_unauthorized(response: requests.Response) -> None:
 
     st.session_state.pop("initialized", None)
     st.session_state.pop("billing_state", None)
-    st.session_state.pop("checkout_url", None)
-    st.session_state.pop("portal_url", None)
     st.error("Your sign-in token expired. Please log in again.")
     st.logout()
     st.rerun()
@@ -139,37 +136,14 @@ def generate_pdf(session_id: str, email: str) -> requests.Response:
 
 
 def fetch_billing_state() -> Optional[BillingStateDict]:
-    """Fetch the current authenticated user's billing state."""
+    """Fetch the current authenticated user's daily quota state."""
     response = _request("GET", f"{API_URL}/billing/me", headers=_headers())
     if response and response.ok:
         return response.json()
-    return None
-
-
-def create_checkout_session(pack_code: str) -> Optional[Dict[str, Any]]:
-    """Create a checkout session for a selected request-unit pack."""
-    response = _request(
-        "POST",
-        f"{API_URL}/billing/checkout-session",
-        json={"pack_code": pack_code},
-        headers=_headers(),
-    )
-    if not response:
-        return None
-
-    if response.ok:
-        return response.json()
-    st.error(response.json().get("detail", "Failed to create checkout session."))
-    return None
-
-
-def create_portal_session() -> Optional[Dict[str, Any]]:
-    """Create a Stripe billing portal session for invoices/receipts."""
-    response = _request("POST", f"{API_URL}/billing/portal-session", headers=_headers())
-    if not response:
-        return None
-
-    if response.ok:
-        return response.json()
-    st.error(response.json().get("detail", "Failed to create portal session."))
+    if response is not None:
+        try:
+            detail = response.json().get("detail", "Failed to load daily credits.")
+        except Exception:
+            detail = "Failed to load daily credits."
+        st.error(detail)
     return None
