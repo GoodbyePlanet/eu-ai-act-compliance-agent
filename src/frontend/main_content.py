@@ -6,7 +6,19 @@ from frontend import fetch_billing_state, generate_pdf, run_assessment
 
 
 def render_main_content():
-    st.markdown(f"Welcome, **{st.user.name}**")
+    st.markdown(
+        """
+        <style>
+            [data-testid="stElementContainer"] [data-testid="stMarkdownContainer"] p strong a {
+                color: black !important;
+                font-weight: bold;
+            }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(f"Welcome, **{st.user.name}** - (**{st.user.email}**)")
     st.title("AI Tool Assessment Agent")
 
     billing_state = st.session_state.get("billing_state")
