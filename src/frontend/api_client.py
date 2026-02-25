@@ -35,6 +35,7 @@ class BillingStateDict(TypedDict):
 
 
 API_URL = os.getenv("API_URL", "http://localhost:8000")
+BACKEND_UNAVAILABLE_MESSAGE = "Internal server error."
 
 
 def _headers() -> Dict[str, str]:
@@ -53,14 +54,30 @@ def _handle_unauthorized(response: requests.Response) -> None:
     st.rerun()
 
 
+def _mark_backend_unavailable(error: Optional[Exception] = None) -> None:
+    """Store backend availability status for centralized UI messaging."""
+    st.session_state.backend_unavailable = True
+    st.session_state.backend_error_detail = str(error) if error else None
+
+
+def _mark_backend_available() -> None:
+    """Clear backend availability status after a successful request."""
+    st.session_state.backend_unavailable = False
+    st.session_state.backend_error_detail = None
+
+
 def _request(method: str, url: str, **kwargs: Any) -> Optional[requests.Response]:
     """Execute an HTTP request and centralize auth failure handling."""
     try:
         response = requests.request(method, url, **kwargs)
-    except Exception as e:
-        st.error(f"Could not connect to backend: {e}")
+    except requests.exceptions.RequestException as exc:
+        _mark_backend_unavailable(exc)
+        return None
+    except Exception:
+        _mark_backend_unavailable()
         return None
 
+    _mark_backend_available()
     _handle_unauthorized(response)
     return response
 
@@ -118,7 +135,7 @@ def run_assessment(payload: AssessRequest) -> requests.Response:
     """Run a compliance assessment for the specified AI tool."""
     response = _request("POST", f"{API_URL}/run", json=payload, headers=_headers())
     if response is None:
-        raise RuntimeError("Could not connect to backend.")
+        raise RuntimeError(BACKEND_UNAVAILABLE_MESSAGE)
     return response
 
 
@@ -131,7 +148,7 @@ def generate_pdf(session_id: str, email: str) -> requests.Response:
         headers=_headers(),
     )
     if response is None:
-        raise RuntimeError("Could not connect to backend.")
+        raise RuntimeError(BACKEND_UNAVAILABLE_MESSAGE)
     return response
 
 

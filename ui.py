@@ -12,6 +12,7 @@ from frontend import (
 
 st.set_page_config(
     page_title="AI Tool Assessment Agent",
+    page_icon="static/favicon.png",
     layout="centered",
     initial_sidebar_state="collapsed",
 )
@@ -45,6 +46,9 @@ if "pdf_data" not in st.session_state:
     st.session_state.pdf_data = None
 if "billing_state" not in st.session_state:
     st.session_state.billing_state = fetch_billing_state()
+
+if st.session_state.get("backend_unavailable", False):
+    st.warning("Something went wrong with the backend API. Please try again later.")
 
 render_sidebar()
 render_main_content()

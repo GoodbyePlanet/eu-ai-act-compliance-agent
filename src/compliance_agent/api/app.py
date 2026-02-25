@@ -1,12 +1,14 @@
 import io
 import logging
 import os
-import time
 from datetime import datetime, timezone
 from typing import List, Optional
 
+import time
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
+from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
 from starlette.responses import StreamingResponse
 
 from compliance_agent import session_service
@@ -48,6 +50,7 @@ def create_app(agent: AgentProtocol) -> FastAPI:
         description="API for assessing AI tools against EU AI Act regulations",
         version="1.0.0",
     )
+    app.mount("/static", StaticFiles(directory=os.path.join(os.getcwd(), "static")), name="static")
 
     billing_service = BillingService()
 
@@ -78,10 +81,15 @@ def create_app(agent: AgentProtocol) -> FastAPI:
                 status_code=500, detail="About EU AI Act page is not available"
             ) from e
 
+    @app.get("/favicon.ico", include_in_schema=False)
+    async def favicon() -> RedirectResponse:
+        """Redirect favicon requests to the static directory."""
+        return RedirectResponse(url="/static/favicon.ico")
+
     @app.post("/run", response_model=AssessResponse)
     async def run(
-        payload: AssessRequest,
-        auth_user: AuthenticatedUser = Depends(get_authenticated_user),
+            payload: AssessRequest,
+            auth_user: AuthenticatedUser = Depends(get_authenticated_user),
     ) -> Optional[AssessResponse]:
         """Run a compliance assessment for the specified AI tool."""
         logger.info(f"Running assessment - requesting user {auth_user.email}, tool {payload.ai_tool}")
@@ -112,7 +120,7 @@ def create_app(agent: AgentProtocol) -> FastAPI:
 
     @app.get("/billing/me", response_model=BillingStateResponse)
     async def billing_me(
-        auth_user: AuthenticatedUser = Depends(get_authenticated_user),
+            auth_user: AuthenticatedUser = Depends(get_authenticated_user),
     ) -> BillingStateResponse:
         """Return the current authenticated user's daily quota state."""
         user_ref = await billing_service.ensure_user(
@@ -124,7 +132,7 @@ def create_app(agent: AgentProtocol) -> FastAPI:
 
     @app.get("/sessions/recent", response_model=Optional[SessionInfo])
     async def get_recent_session(
-        auth_user: AuthenticatedUser = Depends(get_authenticated_user),
+            auth_user: AuthenticatedUser = Depends(get_authenticated_user),
     ) -> Optional[SessionInfo]:
         """Fetch the most recent session if active in the last five minutes."""
         logger.info(f"Fetching recent session for user with email: {auth_user.email}")
@@ -161,7 +169,7 @@ def create_app(agent: AgentProtocol) -> FastAPI:
 
     @app.get("/sessions", response_model=SessionListResponse)
     async def get_user_sessions(
-        auth_user: AuthenticatedUser = Depends(get_authenticated_user),
+            auth_user: AuthenticatedUser = Depends(get_authenticated_user),
     ) -> SessionListResponse:
         """Fetch all user sessions for sidebar history."""
         resolved_email = auth_user.email
@@ -198,8 +206,8 @@ def create_app(agent: AgentProtocol) -> FastAPI:
 
     @app.get("/sessions/{session_id}", response_model=SessionInfo)
     async def get_session_by_id(
-        session_id: str,
-        auth_user: AuthenticatedUser = Depends(get_authenticated_user),
+            session_id: str,
+            auth_user: AuthenticatedUser = Depends(get_authenticated_user),
     ) -> SessionInfo:
         """Load one historical session from history."""
         resolved_email = auth_user.email
@@ -226,8 +234,8 @@ def create_app(agent: AgentProtocol) -> FastAPI:
 
     @app.get("/pdf")
     async def get_pdf(
-        session_id: str,
-        auth_user: AuthenticatedUser = Depends(get_authenticated_user),
+            session_id: str,
+            auth_user: AuthenticatedUser = Depends(get_authenticated_user),
     ) -> StreamingResponse:
         """Generate PDF for a given session ID."""
         logger.info(f"Generating PDF for session {session_id}")
