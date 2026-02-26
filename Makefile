@@ -1,4 +1,4 @@
-.PHONY: all venv install reinstall install-test activate web run-api run-ui clean help test-all
+.PHONY: all venv install reinstall install-test activate web run-api run-ui run-ui-traefik run-db-local stop-db-local clean help test-all
 
 VENV_DIR = .venv
 PYTHON = python3
@@ -61,10 +61,29 @@ run-api: install
 	@echo "--- Starting API on port 8000 ---"
 	$(VENV_BIN)/uvicorn main:app --port 8000 --reload
 
-## run-ui: Starts the Streamlit UI.
+## run-ui: Starts Streamlit UI for local mode (http://localhost:8501).
 run-ui: install
-	@echo "--- Starting Streamlit UI ---"
+	@echo "--- Switching Streamlit auth profile to local ---"
+	./scripts/use_streamlit_auth_profile.sh local
+	@echo "--- Starting Streamlit UI on http://localhost:8501 ---"
 	$(VENV_BIN)/streamlit run ui.py
+
+## run-ui-traefik: Starts Streamlit UI with Traefik auth redirect profile.
+run-ui-traefik: install
+	@echo "--- Switching Streamlit auth profile to traefik ---"
+	./scripts/use_streamlit_auth_profile.sh traefik
+	@echo "--- Starting Streamlit UI (Traefik profile) ---"
+	$(VENV_BIN)/streamlit run ui.py
+
+## run-db-local: Starts only Postgres with localhost:5432 binding for local make run-api.
+run-db-local:
+	@echo "--- Starting local Postgres on localhost:5432 ---"
+	docker compose -f docker-compose.yml -f docker-compose.local.yml up -d db
+
+## stop-db-local: Stops local Postgres started via run-db-local.
+stop-db-local:
+	@echo "--- Stopping local Postgres ---"
+	docker compose -f docker-compose.yml -f docker-compose.local.yml stop db
 
 ## clean: Removes the virtual environment directory (.venv).
 clean:
