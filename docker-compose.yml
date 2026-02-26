@@ -52,10 +52,15 @@ services:
         condition: service_healthy
     labels:
       traefik.enable: "true"
-      traefik.http.routers.backend.rule: ${TRAEFIK_BACKEND_RULE:-PathPrefix(`/api`)}
-      traefik.http.routers.backend.entrypoints: web
-      traefik.http.routers.backend.priority: "100"
-      traefik.http.routers.backend.middlewares: backend-strip-api
+      traefik.http.routers.backend-api.rule: ${TRAEFIK_BACKEND_RULE:-PathPrefix(`/api`)}
+      traefik.http.routers.backend-api.entrypoints: web
+      traefik.http.routers.backend-api.priority: "100"
+      traefik.http.routers.backend-api.middlewares: backend-strip-api
+      traefik.http.routers.backend-api.service: backend
+      traefik.http.routers.backend-landing.rule: ${TRAEFIK_LANDING_RULE:-Path(`/`) || Path(`/about-eu-ai-act`) || Path(`/favicon.ico`) || PathPrefix(`/static`)}
+      traefik.http.routers.backend-landing.entrypoints: web
+      traefik.http.routers.backend-landing.priority: "200"
+      traefik.http.routers.backend-landing.service: backend
       traefik.http.middlewares.backend-strip-api.stripprefix.prefixes: /api
       traefik.http.services.backend.loadbalancer.server.port: "8000"
     networks:
@@ -72,15 +77,16 @@ services:
     environment:
       API_URL: http://traefik/api
       DATABASE_URL: postgresql+asyncpg://agent_user:agent_password@db:5432/agent_sessions
+      STREAMLIT_SERVER_BASE_URL_PATH: /app
     expose:
       - "8501"
     depends_on:
       - backend
     labels:
       traefik.enable: "true"
-      traefik.http.routers.frontend.rule: ${TRAEFIK_FRONTEND_RULE:-PathPrefix(`/`)}
+      traefik.http.routers.frontend.rule: ${TRAEFIK_FRONTEND_RULE:-PathPrefix(`/app`)}
       traefik.http.routers.frontend.entrypoints: web
-      traefik.http.routers.frontend.priority: "1"
+      traefik.http.routers.frontend.priority: "50"
       traefik.http.services.frontend.loadbalancer.server.port: "8501"
     networks:
       - ai_act_network

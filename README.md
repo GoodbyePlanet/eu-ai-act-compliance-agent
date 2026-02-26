@@ -19,7 +19,9 @@ touch .streamlit/credentials.toml
 ```toml
 # Add your Streamlit credentials for being able to have authenticated access to the UI
 [auth]
-redirect_uri = "http://localhost/oauth2callback"
+# This has to be changed depending on how you run the app (via docker-compose or standalone)
+# and how do you set URLs in Google Cloud Console OAuth client settings
+redirect_uri = "http://localhost/app/oauth2callback"
 cookie_secret = "<random string>" # python -c "import secrets; print(secrets.token_hex(32))"
 client_id = "<client id from Google console>"
 client_secret = "<client secret from Google console>"
@@ -27,13 +29,18 @@ server_metadata_url = "https://accounts.google.com/.well-known/openid-configurat
 expose_tokens = ["id"] # Required so UI can send ID token to the API
 ```
 
+Google Cloud Console OAuth client settings:
+- Authorized JavaScript origins: `http://localhost` (origin only, no path)
+- Authorized redirect URIs: `http://localhost/app/oauth2callback`
+
 ```bash
 # Start all app containers behind Traefik reverse proxy
 docker compose up --build
 ```
 
 Local URLs:
-- App UI: `http://localhost`
+- Landing page: `http://localhost`
+- App UI: `http://localhost/app`
 - API docs: `http://localhost/api/docs`
 
 Prerequisites:

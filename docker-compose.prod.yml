@@ -21,9 +21,12 @@ services:
 
   backend:
     labels:
-      traefik.http.routers.backend.entrypoints: websecure
-      traefik.http.routers.backend.tls: "true"
-      traefik.http.routers.backend.tls.certresolver: letsencrypt
+      traefik.http.routers.backend-api.entrypoints: websecure
+      traefik.http.routers.backend-api.tls: "true"
+      traefik.http.routers.backend-api.tls.certresolver: letsencrypt
+      traefik.http.routers.backend-landing.entrypoints: websecure
+      traefik.http.routers.backend-landing.tls: "true"
+      traefik.http.routers.backend-landing.tls.certresolver: letsencrypt
 
   frontend:
     labels:
