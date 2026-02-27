@@ -22,11 +22,11 @@ services:
     container_name: agent-memory-db
     restart: always
     environment:
-      POSTGRES_USER: agent_user
-      POSTGRES_PASSWORD: agent_password
-      POSTGRES_DB: agent_sessions
+      POSTGRES_USER: ${POSTGRES_USER:-agent_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-agent_password}
+      POSTGRES_DB: ${POSTGRES_DB:-agent_sessions}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U agent_user -d agent_sessions"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-agent_user} -d ${POSTGRES_DB:-agent_sessions}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -44,7 +44,7 @@ services:
     env_file:
       - ${APP_ENV_FILE:-.env}
     environment:
-      DATABASE_URL: postgresql+asyncpg://agent_user:agent_password@db:5432/agent_sessions
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-agent_user}:${POSTGRES_PASSWORD:-agent_password}@db:5432/${POSTGRES_DB:-agent_sessions}
     expose:
       - "8000"
     depends_on:
@@ -76,7 +76,7 @@ services:
       - ${APP_ENV_FILE:-.env}
     environment:
       API_URL: http://traefik/api
-      DATABASE_URL: postgresql+asyncpg://agent_user:agent_password@db:5432/agent_sessions
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-agent_user}:${POSTGRES_PASSWORD:-agent_password}@db:5432/${POSTGRES_DB:-agent_sessions}
       STREAMLIT_SERVER_BASE_URL_PATH: /app
     expose:
       - "8501"
