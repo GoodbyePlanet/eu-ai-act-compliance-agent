@@ -44,6 +44,14 @@ class SessionListResponse(BaseModel):
     sessions: List[SessionListItem]
 
 
+class SessionDeleteResponse(BaseModel):
+    """Response model for deleting a user session."""
+
+    session_id: str
+    deleted: bool
+    message: str
+
+
 class ComponentHealth(BaseModel):
     """Health status for an individual component."""
 
