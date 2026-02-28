@@ -5,6 +5,7 @@ import streamlit as st
 
 from frontend.api_client import (
     API_URL,
+    delete_session_by_id_and_email,
     fetch_session_by_id_and_email,
     fetch_session_history,
 )
@@ -65,7 +66,7 @@ def render_sidebar():
         st.markdown(f"[Learn about EU AI Act]({API_URL}/about-eu-ai-act)")
 
         st.divider()
-        if st.button("➕ New Assessment", use_container_width=True):
+        if st.button("New Assessment", icon=":material/add_circle:", use_container_width=True):
             st.session_state.session_id = str(uuid.uuid4())
             st.session_state.ai_tool_name = None
             st.session_state.tool_report_resp = None
@@ -80,7 +81,8 @@ def render_sidebar():
         else:
             for session in history:
                 tool = session.get("ai_tool", "Unknown Tool")
-                display_tool = tool if len(tool) <= 10 else tool[:10] + "..."
+                display_tool = tool
+                session_id = session["session_id"]
 
                 time_str = session.get("created_at", "")
                 formatted_time = time_str
@@ -92,10 +94,28 @@ def render_sidebar():
                     except ValueError:
                         pass
 
-                if st.button(
-                        f"{display_tool} - {formatted_time}",
-                        key=session["session_id"],
-                        use_container_width=True,
-                ):
-                    fetch_session_by_id_and_email(session["session_id"], st.user.email)
-                    st.rerun()
+                load_col, delete_col = st.columns([0.70, 0.30])
+                with load_col:
+                    if st.button(
+                            f"{display_tool}",
+                            key=f"load_{session_id}",
+                            use_container_width=True,
+                    ):
+                        fetch_session_by_id_and_email(session_id, st.user.email)
+                        st.rerun()
+                with delete_col:
+                    with st.popover("", icon=":material/more_horiz:", use_container_width=True):
+                        st.caption(f"Created: {formatted_time}" if formatted_time else "Created: unknown")
+                        if st.button(
+                                "Remove assessment",
+                                key=f"delete_{session_id}",
+                                use_container_width=True,
+                        ):
+                            deleted = delete_session_by_id_and_email(session_id, st.user.email)
+                            if deleted and st.session_state.session_id == session_id:
+                                st.session_state.session_id = str(uuid.uuid4())
+                                st.session_state.ai_tool_name = None
+                                st.session_state.tool_report_resp = None
+                                st.session_state.pdf_data = None
+                            if deleted:
+                                st.rerun()

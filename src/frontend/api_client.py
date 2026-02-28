@@ -24,6 +24,14 @@ class SessionListItemDict(TypedDict):
     created_at: str
 
 
+class SessionDeleteResponseDict(TypedDict):
+    """Type for a delete session response returned by API."""
+
+    session_id: str
+    deleted: bool
+    message: str
+
+
 class BillingStateDict(TypedDict):
     """Type for the daily quota state returned by API."""
 
@@ -129,6 +137,25 @@ def fetch_session_by_id_and_email(session_id: str, email: str) -> None:
         st.session_state.pdf_data = None
     else:
         st.error("Failed to load session data.")
+
+
+def delete_session_by_id_and_email(session_id: str, email: str) -> bool:
+    """Delete a historical session and return whether the operation succeeded."""
+    response = _request(
+        "DELETE",
+        f"{API_URL}/sessions/{session_id}",
+        params={"user_email": email},
+        headers=_headers(),
+    )
+    if not response:
+        return False
+
+    if response.ok:
+        data: SessionDeleteResponseDict = response.json()
+        return bool(data.get("deleted", False))
+
+    st.error("Failed to delete session.")
+    return False
 
 
 def run_assessment(payload: AssessRequest) -> requests.Response:

@@ -19,6 +19,7 @@ from compliance_agent.api.models import (
     BillingStateResponse,
     ComponentHealth,
     HealthResponse,
+    SessionDeleteResponse,
     SessionInfo,
     SessionListItem,
     SessionListResponse,
@@ -230,6 +231,40 @@ def create_app(agent: AgentProtocol) -> FastAPI:
             session_id=session_data.id,
             ai_tool=state.get("ai_tool"),
             summary=state.get("summary"),
+        )
+
+    @app.delete("/sessions/{session_id}", response_model=SessionDeleteResponse)
+    async def delete_session_by_id(
+            session_id: str,
+            auth_user: AuthenticatedUser = Depends(get_authenticated_user),
+    ) -> SessionDeleteResponse:
+        """Delete session by session_id for the authenticated user."""
+        resolved_email = auth_user.email
+        logger.info(f"Deleting session {session_id} for user with email: {resolved_email}")
+
+        try:
+            session_data = await session_service.get_session(
+                app_name=APP_NAME, user_id=resolved_email, session_id=session_id
+            )
+        except Exception as e:
+            logger.error(f"Error checking session {session_id} before delete: {e}")
+            raise HTTPException(status_code=500, detail="Error retrieving session") from e
+
+        if not session_data:
+            raise HTTPException(status_code=404, detail="Session not found")
+
+        try:
+            await session_service.delete_session(
+                app_name=APP_NAME, user_id=resolved_email, session_id=session_id
+            )
+        except Exception as e:
+            logger.error(f"Error deleting session {session_id}: {e}")
+            raise HTTPException(status_code=500, detail="Failed to delete session") from e
+
+        return SessionDeleteResponse(
+            session_id=session_id,
+            deleted=True,
+            message="Session deleted successfully.",
         )
 
     @app.get("/pdf")

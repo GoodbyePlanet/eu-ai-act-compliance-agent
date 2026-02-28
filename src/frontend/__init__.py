@@ -1,4 +1,5 @@
 from .api_client import (
+    delete_session_by_id_and_email,
     fetch_billing_state,
     fetch_recent_session,
     fetch_session_by_id_and_email,
@@ -12,6 +13,7 @@ from .main_content import render_main_content
 
 __all__ = [
     "run_assessment",
+    "delete_session_by_id_and_email",
     "fetch_billing_state",
     "generate_pdf",
     "fetch_recent_session",
