@@ -48,3 +48,27 @@ def test_about_route_returns_500_when_file_is_missing(monkeypatch):
 
     assert response.status_code == 500
     assert response.json()["detail"] == "About EU AI Act page is not available"
+
+
+def test_app_route_redirects_to_local_streamlit_by_default():
+    """App route should redirect to local Streamlit when no URL override is set."""
+    app = create_app(agent=DummyAgent())
+    client = TestClient(app)
+
+    response = client.get("/app", follow_redirects=False)
+
+    assert response.status_code == 307
+    assert response.headers["location"] == "http://localhost:8501"
+
+
+def test_app_route_redirects_to_streamlit_env_url(monkeypatch):
+    """App route should redirect to the configured Streamlit URL when provided."""
+    monkeypatch.setenv("STREAMLIT_APP_URL", "http://localhost/app")
+
+    app = create_app(agent=DummyAgent())
+    client = TestClient(app)
+
+    response = client.get("/app", follow_redirects=False)
+
+    assert response.status_code == 307
+    assert response.headers["location"] == "http://localhost/app"

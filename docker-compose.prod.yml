@@ -20,6 +20,8 @@ services:
       - traefik_letsencrypt:/letsencrypt
 
   backend:
+    environment:
+      STREAMLIT_APP_URL: ${STREAMLIT_APP_URL:-https://ai.example.com/app}
     labels:
       traefik.http.routers.backend-api.entrypoints: websecure
       traefik.http.routers.backend-api.tls: "true"
