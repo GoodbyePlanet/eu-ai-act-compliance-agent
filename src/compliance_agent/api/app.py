@@ -82,6 +82,12 @@ def create_app(agent: AgentProtocol) -> FastAPI:
                 status_code=500, detail="About EU AI Act page is not available"
             ) from e
 
+    @app.get("/app", include_in_schema=False)
+    async def redirect_to_frontend_app() -> RedirectResponse:
+        """Redirect /app to the Streamlit UI in local non-Traefik mode."""
+        app_url = os.getenv("STREAMLIT_APP_URL", "http://localhost:8501")
+        return RedirectResponse(url=app_url)
+
     @app.get("/favicon.ico", include_in_schema=False)
     async def favicon() -> RedirectResponse:
         """Redirect favicon requests to the static directory."""
