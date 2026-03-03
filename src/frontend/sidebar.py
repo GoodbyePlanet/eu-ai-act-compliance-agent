@@ -63,7 +63,7 @@ def render_sidebar():
         else:
             st.caption("Credits left today: unavailable")
 
-        st.markdown(f"[Learn about EU AI Act]({API_URL}/about-eu-ai-act)")
+        st.markdown(f"[Learn about EU AI Act](https://eu-ai-audit.com/about-eu-ai-act)")
 
         st.divider()
         if st.button("New Assessment", icon=":material/add_circle:", use_container_width=True):
