@@ -27,9 +27,13 @@ from compliance_agent.tools import compliance_search_tool
 
 load_dotenv()
 logger = logging.getLogger(__name__)
+ai_model = os.getenv("AI_MODEL")
+
+if not ai_model:
+    raise ValueError("AI_MODEL environment variable not set.")
 
 root_agent = Agent(
-    model=LiteLlm(model="anthropic/claude-sonnet-4-5-20250929"),
+    model=LiteLlm(model=ai_model),
     name=APP_NAME,
     description=AGENT_DESCRIPTION,
     instruction=AGENT_INSTRUCTION,
