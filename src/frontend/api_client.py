@@ -42,12 +42,12 @@ class BillingStateDict(TypedDict):
     can_run_request: bool
     resets_at_utc: str
 
+
 logger = logging.getLogger(__name__)
 
 API_URL = os.getenv("API_URL", "http://localhost:8000")
 BACKEND_UNAVAILABLE_MESSAGE = "Internal server error."
 
-logger.info(f"API URL: {API_URL}")
 
 def _headers() -> Dict[str, str]:
     return get_auth_headers()
@@ -79,7 +79,7 @@ def _mark_backend_available() -> None:
 
 def _request(method: str, url: str, **kwargs: Any) -> Optional[requests.Response]:
     """Execute an HTTP request and centralize auth failure handling."""
-    logger.info(f"Sending {method} request to {url}")
+    logger.info(f"Sending {method} request to {url} with args: {kwargs.get('params')}")
     try:
         response = requests.request(method, url, **kwargs)
     except requests.exceptions.RequestException as exc:

@@ -2,6 +2,10 @@ import uuid
 
 import streamlit as st
 
+from compliance_agent.logging_config import setup_logging
+
+setup_logging(logger_name="frontend", propagate=False)
+
 from frontend import (
     fetch_billing_state,
     fetch_recent_session,
