@@ -76,7 +76,7 @@ services:
     env_file:
       - ${APP_ENV_FILE:-.env}
     environment:
-      API_URL: http://traefik/api
+      API_URL: http://backend:8000/api
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-agent_user}:${POSTGRES_PASSWORD:-agent_password}@db:5432/${POSTGRES_DB:-agent_sessions}
       STREAMLIT_SERVER_BASE_URL_PATH: /app
     expose:
