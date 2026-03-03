@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from urllib.parse import urlparse
 
 import streamlit as st
 
@@ -9,6 +10,27 @@ from frontend.api_client import (
     fetch_session_by_id_and_email,
     fetch_session_history,
 )
+
+ABOUT_EU_AI_ACT_PATH = "/about-eu-ai-act"
+INTERNAL_API_HOSTNAMES = {"backend"}
+
+
+def _build_about_eu_ai_act_url(api_url: str) -> str:
+    """Build the sidebar link target for the About EU AI Act page.
+
+    Args:
+        api_url: Backend base URL used by frontend HTTP requests.
+
+    Returns:
+        Relative path when API URL points to an internal Docker hostname,
+        otherwise an absolute URL rooted at the provided API URL.
+    """
+    parsed = urlparse(api_url)
+
+    if parsed.hostname in INTERNAL_API_HOSTNAMES:
+        return ABOUT_EU_AI_ACT_PATH
+
+    return f"{api_url.rstrip('/')}{ABOUT_EU_AI_ACT_PATH}"
 
 
 def render_sidebar():
@@ -63,7 +85,8 @@ def render_sidebar():
         else:
             st.caption("Credits left today: unavailable")
 
-        st.markdown(f"[Learn about EU AI Act](https://eu-ai-audit.com/about-eu-ai-act)")
+        about_url = _build_about_eu_ai_act_url(API_URL)
+        st.markdown(f"[Learn about EU AI Act]({about_url})")
 
         st.divider()
         if st.button("New Assessment", icon=":material/add_circle:", use_container_width=True):
