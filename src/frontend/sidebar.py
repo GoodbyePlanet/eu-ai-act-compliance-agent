@@ -126,7 +126,15 @@ def render_sidebar():
             st.rerun()
 
         st.write("### Assessment History")
-        history = fetch_session_history(st.user.email)
+        if st.button("Refresh history", use_container_width=True):
+            st.session_state.history_needs_refresh = True
+            st.rerun()
+
+        if st.session_state.get("history_needs_refresh", True):
+            st.session_state.history_cache = fetch_session_history(st.user.email)
+            st.session_state.history_needs_refresh = False
+
+        history = st.session_state.get("history_cache", [])
 
         if not history:
             st.caption("No previous assessments found.")
@@ -162,5 +170,11 @@ def render_sidebar():
                                 st.session_state.ai_tool_name = None
                                 st.session_state.tool_report_resp = None
                                 st.session_state.pdf_data = None
+                            if deleted:
+                                st.session_state.history_cache = [
+                                    item
+                                    for item in st.session_state.get("history_cache", [])
+                                    if item.get("session_id") != session_id
+                                ]
                             if deleted:
                                 st.rerun()

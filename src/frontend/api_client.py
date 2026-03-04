@@ -1,11 +1,12 @@
 import logging
 import os
+import time
 from typing import Any, Dict, List, Optional, TypedDict
 
 import requests
 import streamlit as st
 
-from compliance_agent.api import AssessRequest
+from compliance_agent.api.models import AssessRequest
 from frontend.auth import get_auth_headers
 
 
@@ -43,10 +44,19 @@ class BillingStateDict(TypedDict):
     resets_at_utc: str
 
 
+class UIBootstrapDict(TypedDict):
+    """Type for the combined initial UI bootstrap response returned by API."""
+
+    billing: Optional[BillingStateDict]
+    recent_session: Optional[SessionInfoDict]
+    sessions: List[SessionListItemDict]
+
+
 logger = logging.getLogger(__name__)
 
 API_URL = os.getenv("API_URL", "http://localhost:8000")
 BACKEND_UNAVAILABLE_MESSAGE = "Internal server error."
+_HTTP_SESSION = requests.Session()
 
 
 def _headers() -> Dict[str, str]:
@@ -80,19 +90,39 @@ def _mark_backend_available() -> None:
 def _request(method: str, url: str, **kwargs: Any) -> Optional[requests.Response]:
     """Execute an HTTP request and centralize auth failure handling."""
     logger.info(f"Sending {method} request to {url} with args: {kwargs.get('params')}")
+    start = time.perf_counter()
     try:
-        response = requests.request(method, url, **kwargs)
+        response = _HTTP_SESSION.request(method, url, **kwargs)
     except requests.exceptions.RequestException as exc:
-        logger.error(f"Request failed: {exc}")
+        elapsed_ms = (time.perf_counter() - start) * 1000
+        logger.error(f"Request failed in {elapsed_ms:.2f}ms: {exc}")
         _mark_backend_unavailable(exc)
         return None
     except Exception:
+        elapsed_ms = (time.perf_counter() - start) * 1000
+        logger.error(f"Unexpected request failure in {elapsed_ms:.2f}ms")
         _mark_backend_unavailable()
         return None
 
+    elapsed_ms = (time.perf_counter() - start) * 1000
+    logger.info(
+        "Completed %s %s with status %s in %.2fms",
+        method,
+        url,
+        response.status_code,
+        elapsed_ms,
+    )
     _mark_backend_available()
     _handle_unauthorized(response)
     return response
+
+
+def fetch_ui_bootstrap() -> Optional[UIBootstrapDict]:
+    """Fetch the initial UI state in a single request."""
+    response = _request("GET", f"{API_URL}/ui/bootstrap", headers=_headers())
+    if response and response.ok:
+        return response.json()
+    return None
 
 
 def fetch_recent_session(email: str) -> Optional[SessionInfoDict]:

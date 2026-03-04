@@ -7,8 +7,7 @@ from compliance_agent.logging_config import setup_logging
 setup_logging(logger_name="frontend", propagate=False)
 
 from frontend import (
-    fetch_billing_state,
-    fetch_recent_session,
+    fetch_ui_bootstrap,
     render_main_content,
     render_sidebar,
     require_login,
@@ -24,7 +23,8 @@ st.set_page_config(
 require_login()
 
 if "initialized" not in st.session_state:
-    recent_session = fetch_recent_session(st.user.email)
+    bootstrap = fetch_ui_bootstrap()
+    recent_session = None if bootstrap is None else bootstrap.get("recent_session")
 
     if recent_session:
         st.session_state.session_id = recent_session.get("session_id")
@@ -35,7 +35,9 @@ if "initialized" not in st.session_state:
         st.session_state.ai_tool_name = None
         st.session_state.tool_report_resp = None
 
-    st.session_state.billing_state = fetch_billing_state()
+    st.session_state.billing_state = None if bootstrap is None else bootstrap.get("billing")
+    st.session_state.history_cache = [] if bootstrap is None else bootstrap.get("sessions", [])
+    st.session_state.history_needs_refresh = bootstrap is None
     st.session_state.pdf_data = None
     st.session_state.initialized = True
 
@@ -49,7 +51,11 @@ if "ai_tool_name" not in st.session_state:
 if "pdf_data" not in st.session_state:
     st.session_state.pdf_data = None
 if "billing_state" not in st.session_state:
-    st.session_state.billing_state = fetch_billing_state()
+    st.session_state.billing_state = None
+if "history_cache" not in st.session_state:
+    st.session_state.history_cache = []
+if "history_needs_refresh" not in st.session_state:
+    st.session_state.history_needs_refresh = True
 
 if st.session_state.get("backend_unavailable", False):
     st.warning("Something went wrong with the backend API. Please try again later.")

@@ -76,6 +76,14 @@ class BillingStateResponse(BaseModel):
     resets_at_utc: str
 
 
+class UIBootstrapResponse(BaseModel):
+    """Combined response model for initial Streamlit UI bootstrap."""
+
+    billing: Optional[BillingStateResponse] = None
+    recent_session: Optional[SessionInfo] = None
+    sessions: List[SessionListItem]
+
+
 @runtime_checkable
 class AgentProtocol(Protocol):
     """Protocol defining the interface for compliance assessment agents."""
