@@ -198,7 +198,7 @@ def create_app(agent: AgentProtocol) -> FastAPI:
         formatted_sessions: List[SessionListItem] = []
         for session in sorted_sessions:
             raw_date = datetime.fromtimestamp(session.last_update_time, tz=timezone.utc)
-            date_str = raw_date.strftime("%b %d, %I:%M %p")
+            date_str = raw_date.isoformat()
 
             state = getattr(session, "state", {}) or {}
             ai_tool = state.get("ai_tool", "Unknown Tool")
