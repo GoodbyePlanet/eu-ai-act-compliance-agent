@@ -17,8 +17,8 @@ def test_root_returns_landing_page_html():
     response = client.get("/")
 
     assert response.status_code == 200
-    assert "EU AI ACT | Assessment Agent" in response.text
-    assert "Initialize Assessment" in response.text
+    assert "EU AI Act Compliance Agent" in response.text
+    assert "Start Assessment" in response.text
 
 
 def test_about_route_returns_about_page_html():
