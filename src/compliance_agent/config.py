@@ -120,3 +120,9 @@ AGENT_INSTRUCTION = """
 APP_NAME = "assessment_agent"
 
 MAX_SEARCHES = 20
+
+DISCLAIMER_TEXT = (
+    "Disclaimer: This assessment is AI-generated content and may contain errors or omissions. "
+    "It is provided for informational purposes only. It is not a legally binding document "
+    "and does not constitute legal advice or legal consulting."
+)

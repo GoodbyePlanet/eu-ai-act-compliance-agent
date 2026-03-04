@@ -12,7 +12,7 @@ from reportlab.lib.units import inch
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 
 from compliance_agent import session_service
-from compliance_agent.config import APP_NAME
+from compliance_agent.config import APP_NAME, DISCLAIMER_TEXT
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +75,16 @@ class PDFService:
                 parent=base_styles["Normal"],
                 fontSize=10,
                 leading=12,
+            )
+        )
+
+        styles.add(
+            ParagraphStyle(
+                name="Disclaimer",
+                parent=base_styles["Normal"],
+                fontSize=9,
+                leading=11,
+                textColor=black,
             )
         )
 
@@ -184,6 +194,8 @@ class PDFService:
                     f"Date: {datetime.now().strftime('%Y-%m-%d')}",
                     styles["CustomNormal"],
                 ),
+                Spacer(1, 8),
+                Paragraph(DISCLAIMER_TEXT, styles["Disclaimer"]),
                 Spacer(1, 18),
             ]
 
