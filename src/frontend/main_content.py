@@ -2,8 +2,8 @@ import uuid
 
 import streamlit as st
 
+from compliance_agent.config import DISCLAIMER_TEXT
 from frontend import fetch_billing_state, generate_pdf, run_assessment
-
 
 def render_main_content():
     if "assessment_in_progress" not in st.session_state:
@@ -109,6 +109,7 @@ def render_main_content():
 
     if st.session_state.tool_report_resp:
         st.divider()
+        st.info(DISCLAIMER_TEXT, icon=":material/gavel:")
 
         try:
             with st.spinner("Generating PDF..."):
