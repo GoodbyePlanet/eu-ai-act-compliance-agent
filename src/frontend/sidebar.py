@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from urllib.parse import urlparse
 
 import streamlit as st
@@ -31,6 +31,35 @@ def _build_about_eu_ai_act_url(api_url: str) -> str:
         return ABOUT_EU_AI_ACT_PATH
 
     return f"{api_url.rstrip('/')}{ABOUT_EU_AI_ACT_PATH}"
+
+
+def _format_assessment_created_at(created_at: str) -> str:
+    """Format assessment timestamp for display in UTC without conversion.
+
+    Args:
+        created_at: Timestamp from backend session metadata.
+
+    Returns:
+        UTC timestamp in "YYYY-MM-DD HH:MM UTC" format or original value when parsing fails.
+    """
+    if not created_at:
+        return created_at
+
+    # Current API format: ISO 8601 UTC timestamp from backend.
+    try:
+        parsed_iso = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+        if parsed_iso.tzinfo is None:
+            parsed_iso = parsed_iso.replace(tzinfo=timezone.utc)
+        return parsed_iso.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    except ValueError:
+        pass
+
+    # Legacy API format fallback: "Mar 04, 07:30 PM" (already UTC in this app).
+    try:
+        datetime.strptime(created_at, "%b %d, %I:%M %p")
+        return f"{created_at} UTC"
+    except ValueError:
+        return created_at
 
 
 def render_sidebar():
@@ -108,14 +137,7 @@ def render_sidebar():
                 session_id = session["session_id"]
 
                 time_str = session.get("created_at", "")
-                formatted_time = time_str
-
-                if time_str:
-                    try:
-                        parsed_time = datetime.strptime(time_str, "%b %d, %I:%M %p")
-                        formatted_time = parsed_time.strftime("%b %d, %H:%M")
-                    except ValueError:
-                        pass
+                formatted_time = _format_assessment_created_at(time_str)
 
                 load_col, delete_col = st.columns([0.70, 0.30])
                 with load_col:
