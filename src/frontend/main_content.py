@@ -96,6 +96,7 @@ def render_main_content():
                     st.session_state.ai_tool_name = pending_payload["ai_tool"]
 
                 st.session_state.billing_state = fetch_billing_state()
+                st.session_state.history_needs_refresh = True
                 st.session_state.pdf_data = None
                 st.rerun()
 

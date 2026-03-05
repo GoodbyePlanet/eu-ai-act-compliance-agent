@@ -4,6 +4,7 @@ from .api_client import (
     fetch_recent_session,
     fetch_session_by_id_and_email,
     fetch_session_history,
+    fetch_ui_bootstrap,
     generate_pdf,
     run_assessment,
 )
@@ -19,6 +20,7 @@ __all__ = [
     "fetch_recent_session",
     "fetch_session_history",
     "fetch_session_by_id_and_email",
+    "fetch_ui_bootstrap",
     "get_auth_headers",
     "require_login",
     "render_sidebar",

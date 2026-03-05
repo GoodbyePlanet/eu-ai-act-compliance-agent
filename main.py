@@ -1,4 +1,4 @@
-from compliance_agent import execute
+from compliance_agent.agent import execute
 from compliance_agent.api import create_app
 from compliance_agent.logging_config import setup_logging
 

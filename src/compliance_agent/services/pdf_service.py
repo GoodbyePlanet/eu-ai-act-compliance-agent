@@ -1,8 +1,12 @@
 import io
 import logging
+import os
 import re
+from collections import OrderedDict
 from datetime import datetime
-from typing import Optional, List
+from hashlib import sha256
+from threading import Lock
+from typing import List, Optional, Tuple
 
 import markdown
 from reportlab.lib.colors import blue, black
@@ -11,7 +15,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle, StyleSheet
 from reportlab.lib.units import inch
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 
-from compliance_agent import session_service
+from compliance_agent.agent import session_service
 from compliance_agent.config import APP_NAME, DISCLAIMER_TEXT
 
 logger = logging.getLogger(__name__)
@@ -19,6 +23,9 @@ logger = logging.getLogger(__name__)
 
 class PDFService:
     """Service for generating PDF compliance reports."""
+    _cache_lock: Lock = Lock()
+    _pdf_cache: "OrderedDict[Tuple[str, str], bytes]" = OrderedDict()
+    _cache_max_size: int = int(os.getenv("PDF_CACHE_SIZE", "128"))
 
     @classmethod
     def _create_custom_styles(cls, base_styles):
@@ -207,6 +214,42 @@ class PDFService:
         except Exception as e:
             logger.error(f"Error generating PDF for tool '{ai_tool_name}': {e}")
             raise RuntimeError(f"Failed to generate PDF: {e}") from e
+
+    @classmethod
+    def generate_pdf_cached(cls, report_content: str, ai_tool_name: str, session_id: str) -> bytes:
+        """
+        Generate a PDF and cache bytes for repeated renders of the same report summary.
+
+        Args:
+            report_content: Markdown formatted compliance report.
+            ai_tool_name: Name of the AI tool being assessed.
+            session_id: Session identifier used to scope cache entries.
+
+        Returns:
+            PDF content as bytes.
+        """
+        if not report_content:
+            raise ValueError("Report content cannot be empty")
+
+        report_hash = sha256(report_content.encode("utf-8")).hexdigest()
+        cache_key = (session_id, report_hash)
+
+        with cls._cache_lock:
+            cached_pdf = cls._pdf_cache.get(cache_key)
+            if cached_pdf is not None:
+                cls._pdf_cache.move_to_end(cache_key)
+                logger.info(f"PDF cache hit for session {session_id}")
+                return cached_pdf
+
+        generated_pdf = cls.generate_pdf(report_content=report_content, ai_tool_name=ai_tool_name)
+
+        with cls._cache_lock:
+            cls._pdf_cache[cache_key] = generated_pdf
+            cls._pdf_cache.move_to_end(cache_key)
+            while len(cls._pdf_cache) > cls._cache_max_size:
+                cls._pdf_cache.popitem(last=False)
+
+        return generated_pdf
 
 
 async def get_report_for_session(
