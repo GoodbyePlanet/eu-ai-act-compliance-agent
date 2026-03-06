@@ -1,3 +1,4 @@
+import asyncio
 import io
 import logging
 import os
@@ -203,24 +204,57 @@ def create_app(agent: AgentProtocol) -> FastAPI:
         """Return initial UI data in one round-trip for authenticated users."""
         resolved_email = auth_user.email
 
-        try:
-            response = await session_service.list_sessions(
-                app_name=APP_NAME, user_id=resolved_email
-            )
-            user_sessions = response.sessions
-        except Exception as e:
-            logger.error(f"Error fetching sessions for {resolved_email}: {e}")
-            user_sessions = []
+        async def _load_user_sessions() -> List:
+            try:
+                response = await session_service.list_sessions(
+                    app_name=APP_NAME, user_id=resolved_email
+                )
+                return response.sessions
+            except Exception as e:
+                logger.error(f"Error fetching sessions for {resolved_email}: {e}")
+                return []
+
+        async def _load_billing_state() -> Optional[BillingStateResponse]:
+            try:
+                user_ref = await billing_service.ensure_user(
+                    google_sub=auth_user.subject,
+                    email=resolved_email,
+                )
+                state = await billing_service.get_daily_credit_state(user_id=user_ref.id)
+                return BillingStateResponse(**state.__dict__)
+            except Exception as e:
+                logger.error(f"Error fetching billing state for {resolved_email}: {e}")
+                return None
+
+        user_sessions, billing_state = await asyncio.gather(
+            _load_user_sessions(),
+            _load_billing_state(),
+        )
 
         recent_session: Optional[SessionInfo] = None
         recent_session_id = _build_recent_session_if_active(
             sessions=user_sessions,
         )
         if recent_session_id:
-            try:
-                full_session = await session_service.get_session(
-                    app_name=APP_NAME, user_id=resolved_email, session_id=recent_session_id
+            session_meta = next(
+                (session for session in user_sessions if session.id == recent_session_id),
+                None,
+            )
+            session_meta_state = getattr(session_meta, "state", {}) or {}
+            if session_meta_state:
+                recent_session = SessionInfo(
+                    session_id=recent_session_id,
+                    ai_tool=session_meta_state.get("ai_tool"),
+                    summary=session_meta_state.get("summary"),
                 )
+
+            try:
+                if recent_session is None or recent_session.summary is None:
+                    full_session = await session_service.get_session(
+                        app_name=APP_NAME, user_id=resolved_email, session_id=recent_session_id
+                    )
+                else:
+                    full_session = None
                 if full_session and full_session.state:
                     recent_session = SessionInfo(
                         session_id=full_session.id,
@@ -229,17 +263,6 @@ def create_app(agent: AgentProtocol) -> FastAPI:
                     )
             except Exception as e:
                 logger.error(f"Error fetching recent full session for {resolved_email}: {e}")
-
-        billing_state: Optional[BillingStateResponse] = None
-        try:
-            user_ref = await billing_service.ensure_user(
-                google_sub=auth_user.subject,
-                email=resolved_email,
-            )
-            state = await billing_service.get_daily_credit_state(user_id=user_ref.id)
-            billing_state = BillingStateResponse(**state.__dict__)
-        except Exception as e:
-            logger.error(f"Error fetching billing state for {resolved_email}: {e}")
 
         return UIBootstrapResponse(
             billing=billing_state,

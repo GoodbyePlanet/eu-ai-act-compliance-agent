@@ -2,16 +2,7 @@ import uuid
 
 import streamlit as st
 
-from compliance_agent.logging_config import setup_logging
-
-setup_logging(logger_name="frontend", propagate=False)
-
-from frontend import (
-    fetch_ui_bootstrap,
-    render_main_content,
-    render_sidebar,
-    require_login,
-)
+from frontend.auth import require_login
 
 st.set_page_config(
     page_title="AI Tool Assessment Agent",
@@ -21,6 +12,16 @@ st.set_page_config(
 )
 
 require_login()
+
+from compliance_agent.logging_config import setup_logging
+
+setup_logging(logger_name="frontend", propagate=False)
+
+# Import authenticated-only modules after login so the /app login screen can
+# render without paying full app bootstrap import cost.
+from frontend.api_client import fetch_ui_bootstrap
+from frontend.main_content import render_main_content
+from frontend.sidebar import render_sidebar
 
 if "initialized" not in st.session_state:
     bootstrap = fetch_ui_bootstrap()
