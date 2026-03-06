@@ -24,7 +24,8 @@ from frontend.main_content import render_main_content
 from frontend.sidebar import render_sidebar
 
 if "initialized" not in st.session_state:
-    bootstrap = fetch_ui_bootstrap()
+    with st.spinner("Loading your workspace..."):
+        bootstrap = fetch_ui_bootstrap()
     recent_session = None if bootstrap is None else bootstrap.get("recent_session")
 
     if recent_session:

@@ -143,10 +143,17 @@ def create_app(agent: AgentProtocol) -> FastAPI:
             ) from e
 
     @app.get("/app", include_in_schema=False)
-    async def redirect_to_frontend_app() -> RedirectResponse:
-        """Redirect /app to the Streamlit UI in local non-Traefik mode."""
+    async def redirect_to_app() -> HTMLResponse:
+        """Serve a fast HTML login page that preloads Streamlit in the background."""
         app_url = os.getenv("STREAMLIT_APP_URL", "http://localhost:8501")
-        return RedirectResponse(url=app_url)
+        try:
+            html = _read_static_html("login_page.html")
+        except FileNotFoundError as e:
+            logger.error(f"Login page file not found: {e}")
+            raise HTTPException(status_code=500, detail="Login page is not available") from e
+        html = html.replace("__STREAMLIT_URL__", app_url)
+        html = html.replace("__STREAMLIT_LOGIN_URL__", f"{app_url}?auto_login=true")
+        return HTMLResponse(content=html)
 
     @app.get("/favicon.ico", include_in_schema=False)
     async def favicon() -> RedirectResponse:
