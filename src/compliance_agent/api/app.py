@@ -142,7 +142,7 @@ def create_app(agent: AgentProtocol) -> FastAPI:
                 status_code=500, detail="About EU AI Act page is not available"
             ) from e
 
-    @app.get("/app", include_in_schema=False)
+    @app.get("/login", include_in_schema=False)
     async def redirect_to_app() -> HTMLResponse:
         """Serve a fast HTML login page that preloads Streamlit in the background."""
         app_url = os.getenv("STREAMLIT_APP_URL", "http://localhost:8501")
