@@ -1,16 +1,6 @@
-from .api_client import (
-    delete_session_by_id_and_email,
-    fetch_billing_state,
-    fetch_recent_session,
-    fetch_session_by_id_and_email,
-    fetch_session_history,
-    fetch_ui_bootstrap,
-    generate_pdf,
-    run_assessment,
-)
-from .auth import get_auth_headers, require_login
-from .sidebar import render_sidebar
-from .main_content import render_main_content
+from __future__ import annotations
+
+from typing import Any
 
 __all__ = [
     "run_assessment",
@@ -26,3 +16,26 @@ __all__ = [
     "render_sidebar",
     "render_main_content",
 ]
+
+_MODULE_MAP: dict[str, str] = {
+    "run_assessment": "frontend.api_client",
+    "delete_session_by_id_and_email": "frontend.api_client",
+    "fetch_billing_state": "frontend.api_client",
+    "generate_pdf": "frontend.api_client",
+    "fetch_recent_session": "frontend.api_client",
+    "fetch_session_history": "frontend.api_client",
+    "fetch_session_by_id_and_email": "frontend.api_client",
+    "fetch_ui_bootstrap": "frontend.api_client",
+    "get_auth_headers": "frontend.auth",
+    "require_login": "frontend.auth",
+    "render_sidebar": "frontend.sidebar",
+    "render_main_content": "frontend.main_content",
+}
+
+
+def __getattr__(name: str) -> Any:
+    if name in _MODULE_MAP:
+        import importlib
+        module = importlib.import_module(_MODULE_MAP[name])
+        return getattr(module, name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

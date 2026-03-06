@@ -58,7 +58,7 @@ services:
       traefik.http.routers.backend-api.priority: "100"
       traefik.http.routers.backend-api.middlewares: backend-strip-api
       traefik.http.routers.backend-api.service: backend
-      traefik.http.routers.backend-landing.rule: ${TRAEFIK_LANDING_RULE:-Path(`/`) || Path(`/about-eu-ai-act`) || Path(`/favicon.ico`) || PathPrefix(`/static`)}
+      traefik.http.routers.backend-landing.rule: ${TRAEFIK_LANDING_RULE:-Path(`/`) || Path(`/about-eu-ai-act`) || Path(`/login`) || Path(`/favicon.ico`) || PathPrefix(`/static`)}
       traefik.http.routers.backend-landing.entrypoints: web
       traefik.http.routers.backend-landing.priority: "200"
       traefik.http.routers.backend-landing.service: backend
