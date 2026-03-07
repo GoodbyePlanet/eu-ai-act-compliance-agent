@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&display=swap" rel="stylesheet">
     <link rel="icon" type="image/x-icon" href="static/favicon.png">
-    
+
     <style>
         :root {
             --bg: #ffffff;
@@ -55,7 +55,7 @@
         .hero {
             padding: 120px 8% 100px;
             text-align: center;
-            max-width: 1200px;
+            max-width: 70%;
             margin: 0 auto;
         }
 
@@ -142,13 +142,12 @@
             color: var(--text-dim);
         }
 
-        /* Bento Grid */
         .features {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 1.5rem;
             padding: 80px 8%;
-            max-width: 1300px;
+            max-width: 70%;
             margin: 0 auto;
         }
 
@@ -193,14 +192,34 @@
             text-decoration: none;
         }
 
-        @media (max-width: 900px) {
-            .features { grid-template-columns: 1fr; }
-            .feature-card.span-2 { grid-column: span 1; }
-            h1 { letter-spacing: -2px; }
+        @media (max-width: 1420px) {
+            .features {
+                max-width: 100%;
+            }
+        }
+
+        @media (max-width: 1025px) {
+            .hero, .features {
+                max-width: 100%;
+            }
+
+            .features {
+                grid-template-columns: 1fr;
+            }
+
+            .feature-card.span-2 {
+                grid-column: span 1;
+            }
+
+            h1 {
+                letter-spacing: -2px;
+            }
+
             .cta-group {
                 flex-direction: column;
                 align-items: center;
             }
+
             .cta-button {
                 width: 100%;
                 max-width: 360px;
@@ -210,56 +229,58 @@
     </style>
 </head>
 <body>
-    <nav>
-        <div class="logo">AI.ACT.AGENT</div>
-        <div style="font-weight: 700; font-size: 0.7rem;">[ v1.0.0 ]</div>
-    </nav>
+<nav>
+    <div class="logo">AI.ACT.AGENT</div>
+    <div style="font-weight: 700; font-size: 0.7rem;">[ v1.0.0 ]</div>
+</nav>
 
-    <main>
-        <section class="hero">
-            <span class="badge">EU AI ACT COMPLIANCE</span>
-            <h1>Assess AI tools <br>with evidence.</h1>
-            <p class="subtitle">Run a structured EU AI Act assessment, grounded in web research, with a clear risk classification and citations.</p>
-            <div class="cta-group">
-                <a href="/login" class="cta-button">
-                    Start Assessment
-                </a>
-                <a href="/about-eu-ai-act" class="cta-button secondary">
-                    About the EU AI Act
-                </a>
-            </div>
+<main>
+    <section class="hero">
+        <span class="badge">EU AI ACT COMPLIANCE</span>
+        <h1>Assess AI tools <br>with evidence.</h1>
+        <p class="subtitle">Run a structured EU AI Act assessment, grounded in web research, with a clear risk
+            classification and citations.</p>
+        <div class="cta-group">
+            <a href="/login" class="cta-button">
+                Start Assessment
+            </a>
+            <a href="/about-eu-ai-act" class="cta-button secondary">
+                About the EU AI Act
+            </a>
+        </div>
 
-            <div class="visual-container">
-                <div style="height: 100px; border: 1px dashed var(--border); display: flex; align-items: center; justify-content: center; color: var(--text-dim); font-size: 0.8rem;">
-                    Input tool name &rarr; Web research &rarr; Risk classification &rarr; PDF report
-                </div>
+        <div class="visual-container">
+            <div style="height: 100px; border: 1px dashed var(--border); display: flex; align-items: center; justify-content: center; color: var(--text-dim); font-size: 0.8rem;">
+                Input tool name &rarr; Web research &rarr; Risk classification &rarr; PDF report
             </div>
-        </section>
+        </div>
+    </section>
 
-        <section class="features">
-            <div class="feature-card">
-                <h3>Web-grounded research</h3>
-                <p>The agent searches official and supporting sources before generating findings.</p>
-            </div>
-            <div class="feature-card span-2">
-                <h3>EU AI Act risk classification</h3>
-                <p>Each report classifies the tool as Unacceptable, High, Limited, or Minimal risk.</p>
-            </div>
-            <div class="feature-card span-2">
-                <h3>Structured report with citations</h3>
-                <p>Output includes inventory-style fields, verdict, and linked evidence sources.</p>
-            </div>
-            <div class="feature-card">
-                <h3>Session history and PDF export</h3>
-                <p>Continue assessments in follow-ups, review past sessions, and download a PDF report.</p>
-            </div>
-        </section>
-    </main>
+    <section class="features">
+        <div class="feature-card">
+            <h3>Web-grounded research</h3>
+            <p>The agent searches official and supporting sources before generating findings.</p>
+        </div>
+        <div class="feature-card span-2">
+            <h3>EU AI Act risk classification</h3>
+            <p>Each report classifies the tool as Unacceptable, High, Limited, or Minimal risk.</p>
+        </div>
+        <div class="feature-card span-2">
+            <h3>Structured report with citations</h3>
+            <p>Output includes inventory-style fields, verdict, and linked evidence sources.</p>
+        </div>
+        <div class="feature-card">
+            <h3>Session history and PDF export</h3>
+            <p>Continue assessments in follow-ups, review past sessions, and download a PDF report.</p>
+        </div>
+    </section>
+</main>
 
-    <footer>
-        <div>&copy; 2026 EU AI Act Compliance Agent</div>
-        <div>Author: <a href="https://github.com/GoodbyePlanet" target="_blank" rel="noopener noreferrer">GoodbyePlanet</a></div>
-    </footer>
+<footer>
+    <div>&copy; 2026 EU AI Act Compliance Agent</div>
+    <div>Author: <a href="https://github.com/GoodbyePlanet" target="_blank" rel="noopener noreferrer">GoodbyePlanet</a>
+    </div>
+</footer>
 
 </body>
 </html>
