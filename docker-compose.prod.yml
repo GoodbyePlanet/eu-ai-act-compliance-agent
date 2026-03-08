@@ -7,6 +7,8 @@ services:
       - --entrypoints.websecure.address=:443
       - --entrypoints.web.http.redirections.entryPoint.to=websecure
       - --entrypoints.web.http.redirections.entryPoint.scheme=https
+      - --entrypoints.websecure.transport.respondingTimeouts.idleTimeout=3600s
+      - --entrypoints.websecure.transport.respondingTimeouts.readTimeout=3600s
       - --certificatesresolvers.letsencrypt.acme.email=${LETSENCRYPT_EMAIL}
       - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
       - --certificatesresolvers.letsencrypt.acme.httpchallenge=true
@@ -26,15 +28,21 @@ services:
       traefik.http.routers.backend-api.entrypoints: websecure
       traefik.http.routers.backend-api.tls: "true"
       traefik.http.routers.backend-api.tls.certresolver: letsencrypt
+      traefik.http.routers.backend-api.middlewares: backend-strip-api,compress,hsts
       traefik.http.routers.backend-landing.entrypoints: websecure
       traefik.http.routers.backend-landing.tls: "true"
       traefik.http.routers.backend-landing.tls.certresolver: letsencrypt
+      traefik.http.routers.backend-landing.middlewares: compress,hsts
+      traefik.http.middlewares.hsts.headers.stsSeconds: "31536000"
+      traefik.http.middlewares.hsts.headers.stsIncludeSubdomains: "true"
+      traefik.http.middlewares.hsts.headers.stsPreload: "true"
 
   frontend:
     labels:
       traefik.http.routers.frontend.entrypoints: websecure
       traefik.http.routers.frontend.tls: "true"
       traefik.http.routers.frontend.tls.certresolver: letsencrypt
+      traefik.http.routers.frontend.middlewares: compress,hsts
 
 volumes:
   traefik_letsencrypt:
