@@ -16,20 +16,6 @@ require_login()
 
 _needs_init = "initialized" not in st.session_state
 
-if _needs_init:
-    st.markdown(
-        """
-        <style>
-        [data-testid="stSpinner"] {
-            display: flex;
-            justify-content: center;
-            padding-top: 40vh;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
-
 _ctx = st.spinner("Loading your workspace...") if _needs_init else contextlib.nullcontext()
 
 with _ctx:
