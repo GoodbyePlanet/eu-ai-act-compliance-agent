@@ -141,7 +141,7 @@ def render_sidebar():
         else:
             for session in history:
                 tool = session.get("ai_tool", "Unknown Tool")
-                display_tool = tool
+                display_tool = tool[:15] + "..." if len(tool) > 15 else tool
                 session_id = session["session_id"]
 
                 time_str = session.get("created_at", "")
