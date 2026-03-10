@@ -1,0 +1,3 @@
+- switch to the non-reasoning model -> TBD
+- release app on google console -> DONE
+- use Trivy for search -> TBD
