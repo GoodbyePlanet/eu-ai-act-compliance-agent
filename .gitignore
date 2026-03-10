@@ -19,4 +19,5 @@ wheels/
 # AI stuff
 PAYMENT_PLAN.md
 progress.md
+db_connect.md
 hetzner-plan.md
