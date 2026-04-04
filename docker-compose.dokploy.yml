@@ -26,6 +26,15 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-agent_user}:${POSTGRES_PASSWORD:-agent_password}@db:5432/${POSTGRES_DB:-agent_sessions}
       STREAMLIT_APP_URL: ${STREAMLIT_APP_URL:-https://eu-ai-audit.com/app}
+      AI_MODEL: ${AI_MODEL}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      SERPER_API_KEY: ${SERPER_API_KEY:-}
+      SERPAPI_API_KEY: ${SERPAPI_API_KEY:-}
+      GOOGLE_OIDC_AUDIENCE: ${GOOGLE_OIDC_AUDIENCE}
+      GOOGLE_OIDC_ISSUER: ${GOOGLE_OIDC_ISSUER:-https://accounts.google.com}
+      BILLING_ENABLED: ${BILLING_ENABLED:-false}
+      DAILY_FREE_CREDITS: ${DAILY_FREE_CREDITS:-20}
     expose:
       - "8000"
     depends_on:
@@ -67,6 +76,7 @@ services:
       API_URL: http://backend:8000
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-agent_user}:${POSTGRES_PASSWORD:-agent_password}@db:5432/${POSTGRES_DB:-agent_sessions}
       STREAMLIT_SERVER_BASE_URL_PATH: /app
+      GOOGLE_OIDC_AUDIENCE: ${GOOGLE_OIDC_AUDIENCE}
     expose:
       - "8501"
     depends_on:
