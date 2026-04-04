@@ -23,8 +23,6 @@ services:
       dockerfile: dockerfiles/Dockerfile.api
     container_name: compliance-api
     restart: unless-stopped
-    env_file:
-      - .env.prod
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-agent_user}:${POSTGRES_PASSWORD:-agent_password}@db:5432/${POSTGRES_DB:-agent_sessions}
       STREAMLIT_APP_URL: ${STREAMLIT_APP_URL:-https://eu-ai-audit.com/app}
@@ -65,8 +63,6 @@ services:
       dockerfile: dockerfiles/Dockerfile.ui
     container_name: assessment-ui
     restart: unless-stopped
-    env_file:
-      - .env.prod
     environment:
       API_URL: http://backend:8000
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-agent_user}:${POSTGRES_PASSWORD:-agent_password}@db:5432/${POSTGRES_DB:-agent_sessions}
