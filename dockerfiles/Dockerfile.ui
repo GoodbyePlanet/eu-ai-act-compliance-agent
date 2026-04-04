@@ -14,4 +14,9 @@ ENV PATH="/app/.venv/bin:$PATH"
 COPY . .
 EXPOSE 8501
 
-CMD ["streamlit", "run", "ui.py", "--server.port=8501", "--server.address=0.0.0.0"]
+CMD ["sh", "-c", "\
+  mkdir -p /app/.streamlit && \
+  printf '[auth]\\nredirect_uri = \"%s\"\\ncookie_secret = \"%s\"\\nclient_id = \"%s\"\\nclient_secret = \"%s\"\\nserver_metadata_url = \"https://accounts.google.com/.well-known/openid-configuration\"\\nexpose_tokens = [\"id\"]\\n' \
+    \"$STREAMLIT_REDIRECT_URI\" \"$AUTH_COOKIE_SECRET\" \"$GOOGLE_OIDC_AUDIENCE\" \"$GOOGLE_OAUTH_CLIENT_SECRET\" \
+    > /app/.streamlit/secrets.toml && \
+  streamlit run ui.py --server.port=8501 --server.address=0.0.0.0"]

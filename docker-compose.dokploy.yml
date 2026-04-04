@@ -1,0 +1,118 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: agent-memory-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-agent_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-agent_password}
+      POSTGRES_DB: ${POSTGRES_DB:-agent_sessions}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-agent_user} -d ${POSTGRES_DB:-agent_sessions}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ai_act_network
+
+  backend:
+    build:
+      context: .
+      dockerfile: dockerfiles/Dockerfile.api
+    container_name: compliance-api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-agent_user}:${POSTGRES_PASSWORD:-agent_password}@db:5432/${POSTGRES_DB:-agent_sessions}
+      STREAMLIT_APP_URL: ${STREAMLIT_APP_URL:-https://eu-ai-audit.com/app}
+      AI_MODEL: ${AI_MODEL}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      SERPER_API_KEY: ${SERPER_API_KEY:-}
+      SERPAPI_API_KEY: ${SERPAPI_API_KEY:-}
+      GOOGLE_OIDC_AUDIENCE: ${GOOGLE_OIDC_AUDIENCE}
+      GOOGLE_OIDC_ISSUER: ${GOOGLE_OIDC_ISSUER:-https://accounts.google.com}
+      BILLING_ENABLED: ${BILLING_ENABLED:-false}
+      DAILY_FREE_CREDITS: ${DAILY_FREE_CREDITS:-20}
+    expose:
+      - "8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    labels:
+      traefik.enable: "true"
+      # API routes
+      traefik.http.routers.backend-api.rule: ${TRAEFIK_BACKEND_RULE}
+      traefik.http.routers.backend-api.entrypoints: websecure
+      traefik.http.routers.backend-api.tls: "true"
+      traefik.http.routers.backend-api.tls.certresolver: letsencrypt
+      traefik.http.routers.backend-api.priority: "100"
+      traefik.http.routers.backend-api.middlewares: backend-strip-api,compress
+      traefik.http.routers.backend-api.service: backend
+      # Landing page routes
+      traefik.http.routers.backend-landing.rule: ${TRAEFIK_LANDING_RULE}
+      traefik.http.routers.backend-landing.entrypoints: websecure
+      traefik.http.routers.backend-landing.tls: "true"
+      traefik.http.routers.backend-landing.tls.certresolver: letsencrypt
+      traefik.http.routers.backend-landing.priority: "200"
+      traefik.http.routers.backend-landing.middlewares: compress
+      traefik.http.routers.backend-landing.service: backend
+      # Middlewares
+      traefik.http.middlewares.backend-strip-api.stripprefix.prefixes: /api
+      traefik.http.middlewares.compress.compress: "true"
+      traefik.http.services.backend.loadbalancer.server.port: "8000"
+    networks:
+      - ai_act_network
+      - dokploy-network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: dockerfiles/Dockerfile.ui
+    container_name: assessment-ui
+    restart: unless-stopped
+    environment:
+      API_URL: http://backend:8000
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-agent_user}:${POSTGRES_PASSWORD:-agent_password}@db:5432/${POSTGRES_DB:-agent_sessions}
+      STREAMLIT_SERVER_BASE_URL_PATH: /app
+      AI_MODEL: ${AI_MODEL}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      SERPER_API_KEY: ${SERPER_API_KEY:-}
+      SERPAPI_API_KEY: ${SERPAPI_API_KEY:-}
+      GOOGLE_OIDC_AUDIENCE: ${GOOGLE_OIDC_AUDIENCE}
+      GOOGLE_OIDC_ISSUER: ${GOOGLE_OIDC_ISSUER:-https://accounts.google.com}
+      BILLING_ENABLED: ${BILLING_ENABLED:-false}
+      DAILY_FREE_CREDITS: ${DAILY_FREE_CREDITS:-20}
+      GOOGLE_OAUTH_CLIENT_SECRET: ${GOOGLE_OAUTH_CLIENT_SECRET}
+      AUTH_COOKIE_SECRET: ${AUTH_COOKIE_SECRET}
+      STREAMLIT_REDIRECT_URI: ${STREAMLIT_REDIRECT_URI:-https://eu-ai-audit.com/app/oauth2callback}
+    expose:
+      - "8501"
+    depends_on:
+      - backend
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.frontend.rule: ${TRAEFIK_FRONTEND_RULE}
+      traefik.http.routers.frontend.entrypoints: websecure
+      traefik.http.routers.frontend.tls: "true"
+      traefik.http.routers.frontend.tls.certresolver: letsencrypt
+      traefik.http.routers.frontend.priority: "50"
+      traefik.http.routers.frontend.middlewares: compress
+      traefik.http.middlewares.compress.compress: "true"
+      traefik.http.services.frontend.loadbalancer.server.port: "8501"
+    networks:
+      - ai_act_network
+      - dokploy-network
+
+networks:
+  ai_act_network:
+    driver: bridge
+  dokploy-network:
+    external: true
+
+volumes:
+  postgres_data:
+    external: true
+    name: eu-ai-act-compliance-agent_postgres_data
