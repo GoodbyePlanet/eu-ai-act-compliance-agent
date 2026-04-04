@@ -8,7 +8,7 @@ wheels/
 .DS_Store
 
 .idea
-.streamlit/
+.streamlit/secrets*.toml
 
 .env
 .adk
