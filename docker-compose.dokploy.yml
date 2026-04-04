@@ -114,3 +114,5 @@ networks:
 
 volumes:
   postgres_data:
+    external: true
+    name: eu-ai-act-compliance-agent_postgres_data
