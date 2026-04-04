@@ -78,7 +78,7 @@ services:
       - .env.prod
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-agent_user}:${POSTGRES_PASSWORD:-agent_password}@db:5432/${POSTGRES_DB:-agent_sessions}
-      STREAMLIT_APP_URL: https://${APP_DOMAIN}/app
+      STREAMLIT_APP_URL: ${STREAMLIT_APP_URL:-https://eu-ai-audit.com/app}
     expose:
       - "8000"
     depends_on:
@@ -87,7 +87,7 @@ services:
     labels:
       traefik.enable: "true"
       # API routes
-      traefik.http.routers.backend-api.rule: Host(`${APP_DOMAIN}`) && PathPrefix(`/api`)
+      traefik.http.routers.backend-api.rule: ${TRAEFIK_BACKEND_RULE}
       traefik.http.routers.backend-api.entrypoints: websecure
       traefik.http.routers.backend-api.tls: "true"
       traefik.http.routers.backend-api.tls.certresolver: letsencrypt
@@ -95,7 +95,7 @@ services:
       traefik.http.routers.backend-api.middlewares: backend-strip-api,compress
       traefik.http.routers.backend-api.service: backend
       # Landing page routes
-      traefik.http.routers.backend-landing.rule: Host(`${APP_DOMAIN}`) && (Path(`/`) || Path(`/about-eu-ai-act`) || Path(`/login`) || Path(`/favicon.ico`) || PathPrefix(`/static`))
+      traefik.http.routers.backend-landing.rule: ${TRAEFIK_LANDING_RULE}
       traefik.http.routers.backend-landing.entrypoints: websecure
       traefik.http.routers.backend-landing.tls: "true"
       traefik.http.routers.backend-landing.tls.certresolver: letsencrypt
@@ -128,7 +128,7 @@ services:
       - backend
     labels:
       traefik.enable: "true"
-      traefik.http.routers.frontend.rule: Host(`${APP_DOMAIN}`) && PathPrefix(`/app`)
+      traefik.http.routers.frontend.rule: ${TRAEFIK_FRONTEND_RULE}
       traefik.http.routers.frontend.entrypoints: websecure
       traefik.http.routers.frontend.tls: "true"
       traefik.http.routers.frontend.tls.certresolver: letsencrypt
@@ -157,7 +157,7 @@ volumes:
 | No `docker-compose.prod.yml` overlay | TLS/Let's Encrypt handled by Dokploy's Traefik certresolver |
 | `dokploy-network` (external) on backend + frontend | Dokploy's Traefik can only route to containers on its network |
 | `db` stays on internal network only | No need to expose Postgres to Dokploy's Traefik |
-| `APP_DOMAIN` env var | Cleaner than hardcoding; set in Dokploy's environment config |
+| `TRAEFIK_*_RULE` + `STREAMLIT_APP_URL` env vars | Reuses the same env var pattern from the original compose files |
 | `env_file: .env.prod` hardcoded | Dokploy manages env vars; simplifies config |
 | Idle/read timeout labels removed | These are set globally in Dokploy's Traefik config (see Phase 5) |
 
@@ -173,14 +173,26 @@ volumes:
    - Set the **Compose File Path** to `docker-compose.dokploy.yml`.
 3. **Configure environment variables** in Dokploy's Environment tab:
    ```
-   APP_DOMAIN=ai.goodbyeplanet.dev
+   # Traefik routing rules
+   TRAEFIK_FRONTEND_RULE=Host(`eu-ai-audit.com`,`www.eu-ai-audit.com`) && PathPrefix(`/app`)
+   TRAEFIK_BACKEND_RULE=Host(`eu-ai-audit.com`,`www.eu-ai-audit.com`) && PathPrefix(`/api`)
+   TRAEFIK_LANDING_RULE=Host(`eu-ai-audit.com`,`www.eu-ai-audit.com`) && (Path(`/`) || Path(`/about-eu-ai-act`) || Path(`/login`) || Path(`/favicon.ico`) || PathPrefix(`/static`))
+   STREAMLIT_APP_URL=https://eu-ai-audit.com/app
+
+   # Database
    POSTGRES_USER=<your_user>
    POSTGRES_PASSWORD=<your_password>
    POSTGRES_DB=agent_sessions
+
+   # API keys
    ANTHROPIC_API_KEY=<your_key>
    SERPER_API_KEY=<your_key>
+
+   # Auth
    GOOGLE_OIDC_AUDIENCE=<your_client_id>
    GOOGLE_OIDC_ISSUER=https://accounts.google.com
+
+   # App config
    AI_MODEL=anthropic/claude-sonnet-4-6
    BILLING_ENABLED=true
    DAILY_FREE_CREDITS=20
@@ -216,12 +228,13 @@ In the Dokploy dashboard:
 
 ## Phase 6: DNS Setup
 
-1. Point your domain's DNS A record to the VPS IP:
+1. Point your domain's DNS A records to the VPS IP:
    ```
-   ai.goodbyeplanet.dev  →  A  →  <VPS_IP>
+   eu-ai-audit.com      →  A  →  <VPS_IP>
+   www.eu-ai-audit.com  →  A  →  <VPS_IP>
    ```
 2. Wait for DNS propagation (or set a low TTL beforehand).
-3. Dokploy's Traefik will automatically request a Let's Encrypt certificate for `ai.goodbyeplanet.dev` on the first HTTPS request.
+3. Dokploy's Traefik will automatically request Let's Encrypt certificates for both `eu-ai-audit.com` and `www.eu-ai-audit.com` on the first HTTPS request.
 
 ---
 
@@ -229,9 +242,9 @@ In the Dokploy dashboard:
 
 1. **Check Dokploy dashboard** — all 3 services (db, backend, frontend) should show "Running".
 2. **Test endpoints**:
-   - `https://ai.goodbyeplanet.dev/` — should serve the landing page
-   - `https://ai.goodbyeplanet.dev/app` — should serve the Streamlit UI
-   - `https://ai.goodbyeplanet.dev/api/health` — should return API health check
+   - `https://eu-ai-audit.com/` — should serve the landing page
+   - `https://eu-ai-audit.com/app` — should serve the Streamlit UI
+   - `https://eu-ai-audit.com/api/health` — should return API health check
 3. **Check TLS** — certificate should be valid Let's Encrypt cert for your domain.
 4. **Check SSE streaming** — run a compliance assessment and verify the streaming response doesn't timeout.
 5. **Check logs** in Dokploy dashboard if anything fails.
